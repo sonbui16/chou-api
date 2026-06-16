@@ -1,0 +1,362 @@
+// Chou Dress — Prisma schema (mirror docs/database/schema.sql)
+// Lưu ý: Postgres range type không được Prisma hỗ trợ → rental_items lưu
+// rental_start/rental_end/hold_until; ràng buộc EXCLUDE chống đặt trùng được thêm
+// bằng migration SQL thô (xem prisma/migrations/.../booking_constraints).
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../node_modules/.prisma/client"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum UserRole {
+  customer
+  staff
+  admin
+}
+
+enum ProductStatus {
+  draft
+  active
+  archived
+}
+
+enum ItemStatus {
+  available
+  rented
+  cleaning
+  repairing
+  retired
+}
+
+enum ItemCondition {
+  new
+  good
+  fair
+  worn
+  damaged
+}
+
+enum FulfillmentMethod {
+  pickup
+  delivery
+}
+
+enum RentalStatus {
+  pending
+  confirmed
+  in_use
+  returned
+  completed
+  cancelled
+  overdue
+}
+
+enum PaymentKind {
+  rental_fee
+  deposit
+  deposit_refund
+  late_fee
+  damage_fee
+  shipping_fee
+}
+
+enum PaymentMethod {
+  cash
+  bank_transfer
+  vnpay
+  momo
+  card
+}
+
+enum PaymentStatus {
+  pending
+  paid
+  failed
+  refunded
+}
+
+enum DiscountType {
+  percent
+  fixed
+}
+
+model User {
+  id            String      @id @default(uuid()) @db.Uuid
+  role          UserRole    @default(customer)
+  full_name     String
+  email         String?     @unique
+  phone         String?     @unique
+  password_hash String?
+  is_active     Boolean     @default(true)
+  created_at    DateTime    @default(now())
+  updated_at    DateTime    @updatedAt
+
+  addresses     Address[]
+  rentals       Rental[]
+  reviews       Review[]
+
+  @@map("users")
+}
+
+model Address {
+  id         String   @id @default(uuid()) @db.Uuid
+  user_id    String   @db.Uuid
+  recipient  String
+  phone      String
+  line1      String
+  ward       String?
+  district   String?
+  province   String
+  is_default Boolean  @default(false)
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  user       User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  rentals    Rental[]
+
+  @@index([user_id])
+  @@map("addresses")
+}
+
+model Category {
+  id        String     @id @default(uuid()) @db.Uuid
+  parent_id String?    @db.Uuid
+  name      String
+  slug      String     @unique
+  position  Int        @default(0)
+  created_at DateTime  @default(now())
+  updated_at DateTime  @updatedAt
+
+  parent    Category?  @relation("CategoryTree", fields: [parent_id], references: [id], onDelete: SetNull)
+  children  Category[] @relation("CategoryTree")
+  products  Product[]
+
+  @@index([parent_id])
+  @@map("categories")
+}
+
+model Size {
+  id       Int              @id @default(autoincrement()) @db.SmallInt
+  code     String           @unique
+  label    String
+  variants ProductVariant[]
+
+  @@map("sizes")
+}
+
+model Color {
+  id       Int              @id @default(autoincrement()) @db.SmallInt
+  name     String           @unique
+  hex      String?          @db.Char(7)
+  variants ProductVariant[]
+
+  @@map("colors")
+}
+
+model Product {
+  id           String           @id @default(uuid()) @db.Uuid
+  category_id  String?          @db.Uuid
+  name         String
+  slug         String           @unique
+  description  String?
+  brand        String?
+  rental_price Decimal          @db.Decimal(12, 2)
+  deposit      Decimal          @default(0) @db.Decimal(12, 2)
+  status       ProductStatus    @default(draft)
+  created_at   DateTime         @default(now())
+  updated_at   DateTime         @updatedAt
+
+  category     Category?        @relation(fields: [category_id], references: [id], onDelete: SetNull)
+  variants     ProductVariant[]
+  images       ProductImage[]
+  reviews      Review[]
+
+  @@index([category_id])
+  @@index([status])
+  @@map("products")
+}
+
+model ProductVariant {
+  id             String          @id @default(uuid()) @db.Uuid
+  product_id     String          @db.Uuid
+  size_id        Int?            @db.SmallInt
+  color_id       Int?            @db.SmallInt
+  sku            String?         @unique
+  price_override Decimal?        @db.Decimal(12, 2)
+  created_at     DateTime        @default(now())
+  updated_at     DateTime        @updatedAt
+
+  product        Product         @relation(fields: [product_id], references: [id], onDelete: Cascade)
+  size           Size?           @relation(fields: [size_id], references: [id])
+  color          Color?          @relation(fields: [color_id], references: [id])
+  inventory      InventoryItem[]
+  images         ProductImage[]
+
+  @@unique([product_id, size_id, color_id])
+  @@index([product_id])
+  @@map("product_variants")
+}
+
+model ProductImage {
+  id         String          @id @default(uuid()) @db.Uuid
+  product_id String          @db.Uuid
+  variant_id String?         @db.Uuid
+  url        String
+  alt        String?
+  position   Int             @default(0)
+  is_primary Boolean         @default(false)
+  created_at DateTime        @default(now())
+
+  product    Product         @relation(fields: [product_id], references: [id], onDelete: Cascade)
+  variant    ProductVariant? @relation(fields: [variant_id], references: [id], onDelete: Cascade)
+
+  @@index([product_id])
+  @@map("product_images")
+}
+
+model InventoryItem {
+  id          String        @id @default(uuid()) @db.Uuid
+  variant_id  String        @db.Uuid
+  asset_code  String        @unique
+  status      ItemStatus    @default(available)
+  condition   ItemCondition @default(good)
+  acquired_at DateTime?     @db.Date
+  retired_at  DateTime?     @db.Date
+  notes       String?
+  created_at  DateTime      @default(now())
+  updated_at  DateTime      @updatedAt
+
+  variant     ProductVariant @relation(fields: [variant_id], references: [id], onDelete: Restrict)
+  rental_items RentalItem[]
+
+  @@index([variant_id])
+  @@index([status])
+  @@map("inventory_items")
+}
+
+model Coupon {
+  id           String       @id @default(uuid()) @db.Uuid
+  code         String       @unique
+  type         DiscountType
+  value        Decimal      @db.Decimal(12, 2)
+  min_total    Decimal      @default(0) @db.Decimal(12, 2)
+  max_discount Decimal?     @db.Decimal(12, 2)
+  valid_from   DateTime?
+  valid_to     DateTime?
+  usage_limit  Int?
+  used_count   Int          @default(0)
+  is_active    Boolean      @default(true)
+  created_at   DateTime     @default(now())
+
+  rentals      Rental[]
+
+  @@map("coupons")
+}
+
+model Setting {
+  key         String   @id
+  value       Json
+  description String?
+  updated_at  DateTime @updatedAt
+
+  @@map("settings")
+}
+
+model Rental {
+  id             String            @id @default(uuid()) @db.Uuid
+  rental_no      String            @unique
+  customer_id    String            @db.Uuid
+  status         RentalStatus      @default(pending)
+  fulfillment    FulfillmentMethod
+  address_id     String?           @db.Uuid
+  start_date     DateTime          @db.Date
+  end_date       DateTime          @db.Date
+  subtotal       Decimal           @default(0) @db.Decimal(12, 2)
+  discount_total Decimal           @default(0) @db.Decimal(12, 2)
+  deposit_total  Decimal           @default(0) @db.Decimal(12, 2)
+  shipping_fee   Decimal           @default(0) @db.Decimal(12, 2)
+  grand_total    Decimal           @default(0) @db.Decimal(12, 2)
+  coupon_id      String?           @db.Uuid
+  note           String?
+  picked_up_at   DateTime?
+  returned_at    DateTime?
+  cancelled_at   DateTime?
+  created_at     DateTime          @default(now())
+  updated_at     DateTime          @updatedAt
+
+  customer       User              @relation(fields: [customer_id], references: [id], onDelete: Restrict)
+  address        Address?          @relation(fields: [address_id], references: [id], onDelete: SetNull)
+  coupon         Coupon?           @relation(fields: [coupon_id], references: [id], onDelete: SetNull)
+  items          RentalItem[]
+  payments       Payment[]
+
+  @@index([customer_id])
+  @@index([status])
+  @@index([start_date, end_date])
+  @@map("rentals")
+}
+
+model RentalItem {
+  id             String         @id @default(uuid()) @db.Uuid
+  rental_id      String         @db.Uuid
+  item_id        String         @db.Uuid
+  variant_id     String         @db.Uuid
+  product_id     String         @db.Uuid
+  rental_start   DateTime       @db.Date
+  rental_end     DateTime       @db.Date
+  hold_until     DateTime       @db.Date   // rental_end + cleaning_buffer_days (cho EXCLUDE)
+  product_name   String
+  unit_price     Decimal        @db.Decimal(12, 2)
+  deposit_amount Decimal        @default(0) @db.Decimal(12, 2)
+  condition_out  ItemCondition?
+  condition_in   ItemCondition?
+  cancelled_at   DateTime?
+  created_at     DateTime       @default(now())
+
+  rental         Rental         @relation(fields: [rental_id], references: [id], onDelete: Cascade)
+  item           InventoryItem  @relation(fields: [item_id], references: [id], onDelete: Restrict)
+
+  @@index([rental_id])
+  @@index([item_id])
+  @@map("rental_items")
+}
+
+model Payment {
+  id           String        @id @default(uuid()) @db.Uuid
+  rental_id    String        @db.Uuid
+  kind         PaymentKind
+  method       PaymentMethod
+  amount       Decimal       @db.Decimal(12, 2)
+  status       PaymentStatus @default(pending)
+  provider_txn String?       @unique
+  paid_at      DateTime?
+  created_at   DateTime      @default(now())
+  updated_at   DateTime      @updatedAt
+
+  rental       Rental        @relation(fields: [rental_id], references: [id], onDelete: Restrict)
+
+  @@index([rental_id])
+  @@index([status])
+  @@map("payments")
+}
+
+model Review {
+  id          String   @id @default(uuid()) @db.Uuid
+  product_id  String   @db.Uuid
+  customer_id String   @db.Uuid
+  rental_id   String?  @db.Uuid
+  rating      Int      @db.SmallInt
+  comment     String?
+  created_at  DateTime @default(now())
+
+  product     Product  @relation(fields: [product_id], references: [id], onDelete: Cascade)
+  customer    User     @relation(fields: [customer_id], references: [id], onDelete: Cascade)
+
+  @@unique([product_id, customer_id])
+  @@index([product_id])
+  @@map("reviews")
+}

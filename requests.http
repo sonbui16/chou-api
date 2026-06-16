@@ -1,0 +1,83 @@
+### Chou API — test bằng VS Code REST Client
+### Cài extension "REST Client" (humao.rest-client), rồi bấm "Send Request" trên mỗi block.
+### Chạy lần lượt: login trước (lưu token tự động) → các request cần auth.
+
+@baseUrl = http://localhost:4000/api
+
+### Health
+GET http://localhost:4000/health
+
+### Danh mục
+GET {{baseUrl}}/categories
+
+### Danh sách váy (lọc + phân trang)
+GET {{baseUrl}}/products?cat=dam-da-hoi&sort=price-asc&page=1&limit=12
+
+### Chi tiết 1 váy (lấy variant id để dùng bên dưới)
+# @name product
+GET {{baseUrl}}/products/minuit-da-hoi-do
+
+### Kiểm tra còn hàng theo ngày
+GET {{baseUrl}}/products/minuit-da-hoi-do/availability?variantId={{product.response.body.variants.0.id}}&start=2026-09-10&end=2026-09-12
+
+### Đánh giá của sản phẩm
+GET {{baseUrl}}/products/minuit-da-hoi-do/reviews
+
+### Validate coupon
+POST {{baseUrl}}/coupons/validate
+Content-Type: application/json
+
+{ "code": "CHAOMUNG", "subtotal": 2000000 }
+
+### ----- AUTH -----
+### Đăng nhập khách (token được lưu vào biến {{login.response.body.token}})
+# @name login
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{ "email": "mai.anh@example.com", "password": "test123" }
+
+### Thông tin tài khoản
+GET {{baseUrl}}/auth/me
+Authorization: Bearer {{login.response.body.token}}
+
+### Sổ địa chỉ
+GET {{baseUrl}}/addresses
+Authorization: Bearer {{login.response.body.token}}
+
+### Tạo đơn thuê (pickup, tiền mặt)
+POST {{baseUrl}}/rentals
+Authorization: Bearer {{login.response.body.token}}
+Content-Type: application/json
+
+{
+  "fulfillment": "pickup",
+  "method": "cash",
+  "items": [
+    { "variant_id": "{{product.response.body.variants.0.id}}", "start": "2026-09-10", "end": "2026-09-12" }
+  ]
+}
+
+### Đơn của tôi
+GET {{baseUrl}}/rentals
+Authorization: Bearer {{login.response.body.token}}
+
+### ----- ADMIN -----
+### Đăng nhập admin
+# @name admin
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{ "email": "admin@chou.vn", "password": "admin123" }
+
+### Thống kê dashboard
+GET {{baseUrl}}/admin/stats
+Authorization: Bearer {{admin.response.body.token}}
+
+### Danh sách đơn (lọc trạng thái)
+GET {{baseUrl}}/admin/rentals?status=in_use
+Authorization: Bearer {{admin.response.body.token}}
+
+### Kho váy
+GET {{baseUrl}}/admin/inventory?status=available
+Authorization: Bearer {{admin.response.body.token}}
