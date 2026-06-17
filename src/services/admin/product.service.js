@@ -1,4 +1,29 @@
 import { prisma } from '../../lib/prisma.js'
+import { ApiError } from '../../lib/ApiError.js'
+
+export async function getProduct(id) {
+  const product = await prisma.product.findUnique({
+    where: { id },
+    include: {
+      category: true,
+      images: { orderBy: { position: 'asc' } },
+      variants: {
+        orderBy: { created_at: 'asc' },
+        include: {
+          size: true,
+          color: true,
+          _count: { select: { inventory: true } },
+          inventory: {
+            orderBy: { asset_code: 'asc' },
+            select: { id: true, asset_code: true, status: true, condition: true },
+          },
+        },
+      },
+    },
+  })
+  if (!product) throw ApiError.notFound('Không tìm thấy mẫu váy')
+  return product
+}
 
 export function listProducts() {
   return prisma.product.findMany({

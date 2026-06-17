@@ -30,14 +30,18 @@ src/
     admin.routes.js          # URL '/api/admin/...' (router.use(requireAdmin) đầu file)
   controllers/
     user/  auth · catalog (gồm publicSettings + validateCoupon) · account
-    admin/ dashboard · product · inventory · rental · payment · customer · coupon · setting
+    admin/ dashboard · product · variant · image · inventory · rental · payment · customer · coupon · setting
   services/
     user/  auth · catalog · address · rental · review · coupon (validate)
-    admin/ dashboard · product · inventory · rental · payment · customer · coupon · setting
+    admin/ dashboard · product · variant · image · inventory · rental · payment · customer · coupon · setting
   middlewares/ validate.js · error.js · auth.js
   validators/  index.js      # mọi zod schema (dùng chung user & admin)
-  lib/         prisma · ApiError · serialize · jwt · settings · availability · pricing · dates
+  lib/         prisma · ApiError · serialize · jwt · settings · availability · pricing · dates · upload · assetCode
+  uploads/                   # ảnh sản phẩm tải lên (gitignored), phục vụ tĩnh ở /uploads
 ```
+Ảnh: **multer** (`lib/upload.js`, field `files`, ≤5MB) lưu vào `uploads/`, phục vụ tĩnh `app.use('/uploads', ...)`;
+`helmet({ crossOriginResourcePolicy: 'cross-origin' })` để FE :5173/:5174 load được ảnh. URL ảnh lưu **tuyệt đối**
+(`${req.protocol}://${host}/uploads/<file>`). Mã váy tự sinh `CD-####` qua `lib/assetCode.nextAssetCodes(n)`.
 Mỗi resource = 1 cặp `*.controller.js` + `*.service.js`. Controller **mỏng**; logic ở service.
 
 ## Quy ước API (BẮT BUỘC)
@@ -80,8 +84,9 @@ Mỗi resource = 1 cặp `*.controller.js` + `*.service.js`. Controller **mỏng
 ## Hợp đồng URL (KHÔNG đổi nếu không cần — sẽ vỡ 2 frontend)
 - User `/api/...`: `categories,sizes,colors,products,products/:slug[/availability|/reviews],settings,
   coupons/validate,auth/register|login|me,addresses(CRUD),rentals(GET,POST),rentals/:rentalNo,reviews`.
-- Admin `/api/admin/...`: `stats,products(CRUD),inventory(+PATCH),rentals(+/:id,/:id/status,/:id/refund),
-  payments,customers,coupons(CRUD),settings(GET,PUT)`.
+- Admin `/api/admin/...`: `stats,products(CRUD + GET /:id chi tiết),products/:id/variants(POST),variants/:id(DELETE),
+  variants/:id/inventory(POST nhập kho),products/:id/images(POST upload),images/:id/primary(PATCH),images/:id(DELETE),
+  inventory(GET,+PATCH,+DELETE /:id),rentals(+/:id,/:id/status,/:id/refund),payments,customers,coupons(CRUD),settings(GET,PUT)`.
 - Khi thêm/sửa route, đối chiếu lại lời gọi ở `chou-ui/src/api/*` và `chou-admin/src/api/admin.js`.
 
 ## Bảo mật & vận hành

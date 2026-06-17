@@ -150,3 +150,25 @@ export const inventoryQuerySchema = z.object({
 export const updateSettingsSchema = z.object({
   body: z.record(z.string(), z.any()),
 })
+
+/* ---------------- Admin: variants / inventory intake / images ---------------- */
+const itemCondition = z.enum(['new', 'good', 'fair', 'worn', 'damaged'])
+
+export const createVariantSchema = z.object({
+  params: z.object({ id: uuid }),
+  body: z.object({
+    size_id: z.coerce.number().int().nullish(),
+    color_id: z.coerce.number().int().nullish(),
+    sku: z.string().min(1).nullish(),
+    price_override: z.coerce.number().min(0).nullish(),
+  }),
+})
+
+export const addInventorySchema = z.object({
+  params: z.object({ id: uuid }),
+  body: z.object({
+    quantity: z.coerce.number().int().min(1).max(50),
+    condition: itemCondition.optional(),
+    acquired_at: isoDateStr.optional(),
+  }),
+})

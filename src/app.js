@@ -6,6 +6,7 @@ import morgan from 'morgan'
 import rateLimit from 'express-rate-limit'
 import routes from './routes/index.js'
 import { notFound, errorHandler } from './middlewares/error.js'
+import { UPLOAD_DIR } from './lib/upload.js'
 
 const app = express()
 
@@ -24,10 +25,14 @@ const corsOrigin = (origin, callback) => {
   return callback(null, false)
 }
 
-app.use(helmet())
+// crossOriginResourcePolicy: cross-origin để ảnh /uploads load được từ chou-ui/chou-admin
+app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }))
 app.use(cors({ origin: corsOrigin, credentials: true }))
 app.use(express.json())
 if (process.env.NODE_ENV !== 'test') app.use(morgan('dev'))
+
+// Ảnh sản phẩm tải lên (multer) — phục vụ tĩnh
+app.use('/uploads', express.static(UPLOAD_DIR))
 
 // Giới hạn brute-force cho auth
 app.use('/api/auth', rateLimit({ windowMs: 15 * 60 * 1000, max: 50, standardHeaders: true, legacyHeaders: false }))
