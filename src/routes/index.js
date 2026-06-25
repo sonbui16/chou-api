@@ -1,6 +1,6 @@
-import { Router } from 'express'
-import userRoutes from './user.routes.js'
-import adminRoutes from './admin.routes.js'
+const { Router } = require('express')
+const userRoutes = require('@/routes/user.routes.js')
+const adminRoutes = require('@/routes/admin.routes.js')
 
 const r = Router()
 
@@ -8,4 +8,4 @@ const r = Router()
 r.use('/', userRoutes)
 r.use('/admin', adminRoutes)
 
-export default r
+module.exports = r

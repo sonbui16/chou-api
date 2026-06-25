@@ -45,3 +45,9 @@ coupons CRUD · `GET /customers` · `GET/PUT /settings`
 ## Ghép với chou-ui
 chou-ui chỉ cần trỏ base URL `http://localhost:4000/api`, lưu JWT sau đăng nhập, và bỏ lớp mock.
 CORS đã mở cho `http://localhost:5173`.
+
+
+
+
+1.tạo ra 1 định dạng chuẩn response.tạo ra 1 response.middlewares.js
+1.tạo .env đầu tiên sử dụng dotenv

@@ -1,7 +1,7 @@
-import bcrypt from 'bcryptjs'
-import { prisma } from '../../lib/prisma.js'
-import { ApiError } from '../../lib/ApiError.js'
-import { signToken } from '../../lib/jwt.js'
+const bcrypt = require('bcryptjs')
+const { prisma } = require('@/lib/prisma.js')
+const { ApiError } = require('@/lib/ApiError.js')
+const { signToken } = require('@/lib/jwt.js')
 
 const publicUser = (u) => ({
   id: u.id,
@@ -12,7 +12,7 @@ const publicUser = (u) => ({
   created_at: u.created_at,
 })
 
-export async function register({ full_name, email, phone, password }) {
+async function register({ full_name, email, phone, password }) {
   const normEmail = email.toLowerCase().trim()
   const existing = await prisma.user.findFirst({
     where: { OR: [{ email: normEmail }, { phone }] },
@@ -27,7 +27,7 @@ export async function register({ full_name, email, phone, password }) {
   return { token, user: publicUser(user) }
 }
 
-export async function login({ email, password }) {
+async function login({ email, password }) {
   const user = await prisma.user.findUnique({ where: { email: email.toLowerCase().trim() } })
   if (!user || !user.password_hash) throw ApiError.unauthorized('Sai email hoặc mật khẩu')
   const ok = await bcrypt.compare(password, user.password_hash)
@@ -37,8 +37,10 @@ export async function login({ email, password }) {
   return { token, user: publicUser(user) }
 }
 
-export async function getMe(userId) {
+async function getMe(userId) {
   const user = await prisma.user.findUnique({ where: { id: userId } })
   if (!user) throw ApiError.notFound('Không tìm thấy tài khoản')
   return publicUser(user)
 }
+
+module.exports = { register, login, getMe }

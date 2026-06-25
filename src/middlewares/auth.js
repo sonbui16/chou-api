@@ -1,8 +1,8 @@
-import { ApiError } from '../lib/ApiError.js'
-import { verifyToken } from '../lib/jwt.js'
+const { ApiError } = require('@/lib/ApiError.js')
+const { verifyToken } = require('@/lib/jwt.js')
 
 /** Gắn req.user nếu có token hợp lệ; ném 401 nếu thiếu/invalid. */
-export function requireAuth(req, _res, next) {
+function requireAuth(req, _res, next) {
   const header = req.headers.authorization ?? ''
   const token = header.startsWith('Bearer ') ? header.slice(7) : null
   if (!token) return next(ApiError.unauthorized())
@@ -16,7 +16,7 @@ export function requireAuth(req, _res, next) {
 }
 
 /** Chỉ cho staff/admin. */
-export function requireAdmin(req, _res, next) {
+function requireAdmin(req, _res, next) {
   requireAuth(req, _res, (err) => {
     if (err) return next(err)
     if (req.user.role !== 'admin' && req.user.role !== 'staff') {
@@ -27,7 +27,7 @@ export function requireAdmin(req, _res, next) {
 }
 
 /** Gắn req.user nếu có token, nhưng không bắt buộc. */
-export function optionalAuth(req, _res, next) {
+function optionalAuth(req, _res, next) {
   const header = req.headers.authorization ?? ''
   const token = header.startsWith('Bearer ') ? header.slice(7) : null
   if (token) {
@@ -40,3 +40,5 @@ export function optionalAuth(req, _res, next) {
   }
   next()
 }
+
+module.exports = { requireAuth, requireAdmin, optionalAuth }

@@ -1,9 +1,9 @@
-import { prisma } from '../../lib/prisma.js'
-import { ApiError } from '../../lib/ApiError.js'
-import { getSettings } from '../../lib/settings.js'
-import { checkAvailability } from '../../lib/availability.js'
-import { computeTotals } from '../../lib/pricing.js'
-import { addDays, isoDate, toDateOnly } from '../../lib/dates.js'
+const { prisma } = require('@/lib/prisma.js')
+const { ApiError } = require('@/lib/ApiError.js')
+const { getSettings } = require('@/lib/settings.js')
+const { checkAvailability } = require('@/lib/availability.js')
+const { computeTotals } = require('@/lib/pricing.js')
+const { addDays, isoDate, toDateOnly } = require('@/lib/dates.js')
 
 const rentalInclude = {
   items: true,
@@ -17,7 +17,7 @@ async function nextRentalNo() {
   return `R-2026-${String(count + 119).padStart(6, '0')}`
 }
 
-export async function createRental(userId, input) {
+async function createRental(userId, input) {
   const settings = await getSettings()
   const buffer = Number(settings.cleaning_buffer_days) || 0
 
@@ -146,7 +146,7 @@ export async function createRental(userId, input) {
   return rental
 }
 
-export function listMyRentals(userId) {
+function listMyRentals(userId) {
   return prisma.rental.findMany({
     where: { customer_id: userId },
     include: rentalInclude,
@@ -154,10 +154,11 @@ export function listMyRentals(userId) {
   })
 }
 
-export async function getMyRentalByNo(userId, rentalNo) {
+async function getMyRentalByNo(userId, rentalNo) {
   const rental = await prisma.rental.findUnique({ where: { rental_no: rentalNo }, include: rentalInclude })
   if (!rental || rental.customer_id !== userId) throw ApiError.notFound('Không tìm thấy đơn')
   return rental
 }
 
-export { isoDate }
+
+module.exports = { createRental, listMyRentals, getMyRentalByNo, isoDate }

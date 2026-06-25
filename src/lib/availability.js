@@ -1,11 +1,11 @@
-import { prisma } from './prisma.js'
-import { addDays, isoDate, rangesOverlap } from './dates.js'
+const { prisma } = require('@/lib/prisma.js')
+const { addDays, isoDate, rangesOverlap } = require('@/lib/dates.js')
 
 /**
  * Số bản vật lý của một variant còn trống trong khoảng [start, end] (ngày, bao gồm 2 đầu mút).
  * Khớp ràng buộc no_double_booking: khoảng giữ chỗ = [start, end + 1 + buffer).
  */
-export async function checkAvailability({ variantId, start, end, bufferDays }) {
+async function checkAvailability({ variantId, start, end, bufferDays }) {
   const usable = await prisma.inventoryItem.findMany({
     where: { variant_id: variantId, status: { notIn: ['retired', 'repairing'] } },
     select: { id: true },
@@ -41,3 +41,5 @@ export async function checkAvailability({ variantId, start, end, bufferDays }) {
     availableItemIds: free.map((i) => i.id),
   }
 }
+
+module.exports = { checkAvailability }

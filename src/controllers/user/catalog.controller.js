@@ -1,35 +1,35 @@
-import { asyncHandler } from '../../lib/ApiError.js'
-import { sendJson } from '../../lib/serialize.js'
-import { getSettings } from '../../lib/settings.js'
-import { checkAvailability } from '../../lib/availability.js'
-import * as catalog from '../../services/user/catalog.service.js'
-import * as coupons from '../../services/user/coupon.service.js'
+const { asyncHandler } = require('@/lib/ApiError.js')
+const { sendJson } = require('@/lib/serialize.js')
+const { getSettings } = require('@/lib/settings.js')
+const { checkAvailability } = require('@/lib/availability.js')
+const catalog = require('@/services/user/catalog.service.js')
+const coupons = require('@/services/user/coupon.service.js')
 
-export const getCategories = asyncHandler(async (_req, res) => {
+const getCategories = asyncHandler(async (_req, res) => {
   sendJson(res, await catalog.listCategories())
 })
 
-export const getSizes = asyncHandler(async (_req, res) => {
+const getSizes = asyncHandler(async (_req, res) => {
   sendJson(res, await catalog.listSizes())
 })
 
-export const getColors = asyncHandler(async (_req, res) => {
+const getColors = asyncHandler(async (_req, res) => {
   sendJson(res, await catalog.listColors())
 })
 
-export const getProducts = asyncHandler(async (req, res) => {
+const getProducts = asyncHandler(async (req, res) => {
   sendJson(res, await catalog.listProducts(req.valid.query))
 })
 
-export const getProduct = asyncHandler(async (req, res) => {
+const getProduct = asyncHandler(async (req, res) => {
   sendJson(res, await catalog.getProductBySlug(req.valid.params.slug))
 })
 
-export const getReviews = asyncHandler(async (req, res) => {
+const getReviews = asyncHandler(async (req, res) => {
   sendJson(res, await catalog.getProductReviews(req.valid.params.slug))
 })
 
-export const getAvailability = asyncHandler(async (req, res) => {
+const getAvailability = asyncHandler(async (req, res) => {
   const { slug } = req.valid.params
   const { variantId, start, end } = req.valid.query
   await catalog.getAvailabilityForProduct(slug, variantId, start, end)
@@ -44,7 +44,7 @@ export const getAvailability = asyncHandler(async (req, res) => {
 })
 
 /* ---------------- Storefront misc (settings công khai + áp coupon) ---------------- */
-export const publicSettings = asyncHandler(async (_req, res) => {
+const publicSettings = asyncHandler(async (_req, res) => {
   const s = await getSettings()
   sendJson(res, {
     min_rental_days: s.min_rental_days,
@@ -53,6 +53,8 @@ export const publicSettings = asyncHandler(async (_req, res) => {
   })
 })
 
-export const validateCoupon = asyncHandler(async (req, res) => {
+const validateCoupon = asyncHandler(async (req, res) => {
   sendJson(res, await coupons.validateCoupon(req.valid.body.code, req.valid.body.subtotal))
 })
+
+module.exports = { getCategories, getSizes, getColors, getProducts, getProduct, getReviews, getAvailability, publicSettings, validateCoupon }

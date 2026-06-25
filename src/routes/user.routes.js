@@ -1,10 +1,12 @@
-import { Router } from 'express'
-import { validate } from '../middlewares/validate.js'
-import { requireAuth } from '../middlewares/auth.js'
-import * as catalog from '../controllers/user/catalog.controller.js'
-import * as auth from '../controllers/user/auth.controller.js'
-import * as account from '../controllers/user/account.controller.js'
-import * as V from '../validators/index.js'
+const { Router } = require('express')
+const { validate } = require('@/middlewares/validate.js')
+const { optionalAuth, requireAuth } = require('@/middlewares/auth.js')
+const rateLimit = require('express-rate-limit')
+const catalog = require('@/controllers/user/catalog.controller.js')
+const auth = require('@/controllers/user/auth.controller.js')
+const account = require('@/controllers/user/account.controller.js')
+const presence = require('@/controllers/user/presence.controller.js')
+const V = require('@/validators/index.js')
 
 const r = Router()
 
@@ -18,6 +20,13 @@ r.get('/products/:slug/availability', validate(V.availabilitySchema), catalog.ge
 r.get('/products/:slug/reviews', validate(V.productSlugSchema), catalog.getReviews)
 r.get('/settings', catalog.publicSettings)
 r.post('/coupons/validate', validate(V.validateCouponSchema), catalog.validateCoupon)
+r.post(
+  '/presence/heartbeat',
+  rateLimit({ windowMs: 60 * 1000, max: 120, standardHeaders: true, legacyHeaders: false }),
+  optionalAuth,
+  validate(V.presenceHeartbeatSchema),
+  presence.heartbeat,
+)
 
 /* ---------------- Auth ---------------- */
 r.post('/auth/register', validate(V.registerSchema), auth.register)
@@ -36,4 +45,4 @@ r.get('/rentals/:rentalNo', requireAuth, validate(V.rentalNoSchema), account.myR
 
 r.post('/reviews', requireAuth, validate(V.reviewSchema), account.createReview)
 
-export default r
+module.exports = r

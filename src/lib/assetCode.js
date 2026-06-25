@@ -1,4 +1,4 @@
-import { prisma } from './prisma.js'
+const { prisma } = require('@/lib/prisma.js')
 
 const PREFIX = 'CD-'
 
@@ -9,7 +9,7 @@ const PREFIX = 'CD-'
  * @param {import('@prisma/client').PrismaClient} [client] - prisma hoặc tx
  * @returns {Promise<string[]>}
  */
-export async function nextAssetCodes(count, client = prisma) {
+async function nextAssetCodes(count, client = prisma) {
   const rows = await client.inventoryItem.findMany({
     where: { asset_code: { startsWith: PREFIX } },
     select: { asset_code: true },
@@ -21,3 +21,5 @@ export async function nextAssetCodes(count, client = prisma) {
   }
   return Array.from({ length: count }, (_, i) => `${PREFIX}${String(max + 1 + i).padStart(4, '0')}`)
 }
+
+module.exports = { nextAssetCodes }

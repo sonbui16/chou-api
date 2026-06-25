@@ -1,5 +1,5 @@
-import { prisma } from '../../lib/prisma.js'
-import { ApiError } from '../../lib/ApiError.js'
+const { prisma } = require('@/lib/prisma.js')
+const { ApiError } = require('@/lib/ApiError.js')
 
 const productInclude = {
   category: true,
@@ -29,19 +29,19 @@ function toProductView(p) {
   }
 }
 
-export async function listCategories() {
+async function listCategories() {
   return prisma.category.findMany({ orderBy: { position: 'asc' } })
 }
 
-export async function listSizes() {
+async function listSizes() {
   return prisma.size.findMany({ orderBy: { id: 'asc' } })
 }
 
-export async function listColors() {
+async function listColors() {
   return prisma.color.findMany({ orderBy: { id: 'asc' } })
 }
 
-export async function listProducts(q) {
+async function listProducts(q) {
   const where = { status: 'active' }
   if (q.cat) where.category = { slug: q.cat }
   if (q.size) where.variants = { some: { size_id: q.size } }
@@ -78,13 +78,13 @@ export async function listProducts(q) {
   return { items, total, page, limit, page_count: Math.ceil(total / limit) }
 }
 
-export async function getProductBySlug(slug) {
+async function getProductBySlug(slug) {
   const p = await prisma.product.findUnique({ where: { slug }, include: productInclude })
   if (!p) throw ApiError.notFound('Không tìm thấy sản phẩm')
   return toProductView(p)
 }
 
-export async function getProductReviews(slug) {
+async function getProductReviews(slug) {
   const p = await prisma.product.findUnique({ where: { slug }, select: { id: true } })
   if (!p) throw ApiError.notFound('Không tìm thấy sản phẩm')
   return prisma.review.findMany({
@@ -94,7 +94,7 @@ export async function getProductReviews(slug) {
   })
 }
 
-export async function getAvailabilityForProduct(slug, variantId, start, end) {
+async function getAvailabilityForProduct(slug, variantId, start, end) {
   const product = await prisma.product.findUnique({
     where: { slug },
     select: { id: true, variants: { select: { id: true } } },
@@ -105,3 +105,5 @@ export async function getAvailabilityForProduct(slug, variantId, start, end) {
   }
   return { product, variantId, start, end }
 }
+
+module.exports = { listCategories, listSizes, listColors, listProducts, getProductBySlug, getProductReviews, getAvailabilityForProduct }

@@ -1,11 +1,11 @@
-import { ApiError } from '../lib/ApiError.js'
+const { ApiError } = require('@/lib/ApiError.js')
 
-export function notFound(_req, res) {
+function notFound(_req, res) {
   res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Endpoint không tồn tại' } })
 }
 
 // eslint-disable-next-line no-unused-vars
-export function errorHandler(err, _req, res, _next) {
+function errorHandler(err, _req, res, _next) {
   if (err instanceof ApiError) {
     return res
       .status(err.status)
@@ -29,3 +29,5 @@ export function errorHandler(err, _req, res, _next) {
   console.error('[error]', err)
   res.status(500).json({ error: { code: 'INTERNAL', message: 'Lỗi máy chủ' } })
 }
+
+module.exports = { notFound, errorHandler }

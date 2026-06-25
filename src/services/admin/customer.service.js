@@ -1,6 +1,6 @@
-import { prisma } from '../../lib/prisma.js'
+const { prisma } = require('@/lib/prisma.js')
 
-export async function listCustomers() {
+async function listCustomers() {
   const customers = await prisma.user.findMany({
     where: { role: 'customer' },
     include: { _count: { select: { rentals: true } }, rentals: { select: { grand_total: true } } },
@@ -16,3 +16,5 @@ export async function listCustomers() {
     total_spent: c.rentals.reduce((s, r) => s + Number(r.grand_total), 0),
   }))
 }
+
+module.exports = { listCustomers }

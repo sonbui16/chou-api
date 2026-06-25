@@ -1,7 +1,7 @@
-import { prisma } from '../../lib/prisma.js'
-import { ApiError } from '../../lib/ApiError.js'
+const { prisma } = require('@/lib/prisma.js')
+const { ApiError } = require('@/lib/ApiError.js')
 
-export function listAddresses(userId) {
+function listAddresses(userId) {
   return prisma.address.findMany({
     where: { user_id: userId },
     orderBy: [{ is_default: 'desc' }, { created_at: 'asc' }],
@@ -15,7 +15,7 @@ async function clearDefaults(userId, exceptId) {
   })
 }
 
-export async function createAddress(userId, data) {
+async function createAddress(userId, data) {
   const count = await prisma.address.count({ where: { user_id: userId } })
   const is_default = data.is_default || count === 0
   return prisma.$transaction(async (tx) => {
@@ -29,7 +29,7 @@ export async function createAddress(userId, data) {
   })
 }
 
-export async function updateAddress(userId, id, data) {
+async function updateAddress(userId, id, data) {
   const addr = await prisma.address.findFirst({ where: { id, user_id: userId } })
   if (!addr) throw ApiError.notFound('Không tìm thấy địa chỉ')
   return prisma.$transaction(async (tx) => {
@@ -43,9 +43,11 @@ export async function updateAddress(userId, id, data) {
   })
 }
 
-export async function deleteAddress(userId, id) {
+async function deleteAddress(userId, id) {
   const addr = await prisma.address.findFirst({ where: { id, user_id: userId } })
   if (!addr) throw ApiError.notFound('Không tìm thấy địa chỉ')
   await prisma.address.delete({ where: { id } })
   return { ok: true }
 }
+
+module.exports = { listAddresses, createAddress, updateAddress, deleteAddress }

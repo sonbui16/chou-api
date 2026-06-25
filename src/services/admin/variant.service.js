@@ -1,7 +1,7 @@
-import { prisma } from '../../lib/prisma.js'
-import { ApiError } from '../../lib/ApiError.js'
+const { prisma } = require('@/lib/prisma.js')
+const { ApiError } = require('@/lib/ApiError.js')
 
-export async function createVariant(productId, data) {
+async function createVariant(productId, data) {
   try {
     return await prisma.productVariant.create({
       data: {
@@ -29,7 +29,7 @@ export async function createVariant(productId, data) {
   }
 }
 
-export async function deleteVariant(id) {
+async function deleteVariant(id) {
   const count = await prisma.inventoryItem.count({ where: { variant_id: id } })
   if (count > 0) throw ApiError.conflict('Hãy xoá hết bản váy trong biến thể này trước')
   try {
@@ -40,3 +40,5 @@ export async function deleteVariant(id) {
   }
   return { ok: true }
 }
+
+module.exports = { createVariant, deleteVariant }

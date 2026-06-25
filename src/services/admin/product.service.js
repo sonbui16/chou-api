@@ -1,7 +1,7 @@
-import { prisma } from '../../lib/prisma.js'
-import { ApiError } from '../../lib/ApiError.js'
+const { prisma } = require('@/lib/prisma.js')
+const { ApiError } = require('@/lib/ApiError.js')
 
-export async function getProduct(id) {
+async function getProduct(id) {
   const product = await prisma.product.findUnique({
     where: { id },
     include: {
@@ -25,7 +25,7 @@ export async function getProduct(id) {
   return product
 }
 
-export function listProducts() {
+function listProducts() {
   return prisma.product.findMany({
     include: {
       category: true,
@@ -37,12 +37,14 @@ export function listProducts() {
   })
 }
 
-export async function saveProduct(id, data) {
+async function saveProduct(id, data) {
   if (id) return prisma.product.update({ where: { id }, data })
   return prisma.product.create({ data })
 }
 
-export async function deleteProduct(id) {
+async function deleteProduct(id) {
   await prisma.product.delete({ where: { id } })
   return { ok: true }
 }
+
+module.exports = { getProduct, listProducts, saveProduct, deleteProduct }

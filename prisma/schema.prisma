@@ -98,8 +98,31 @@ model User {
   addresses     Address[]
   rentals       Rental[]
   reviews       Review[]
+  visitor_sessions VisitorSession[]
 
   @@map("users")
+}
+
+model VisitorSession {
+  id           String   @id @default(uuid()) @db.Uuid
+  visitor_id   String   @db.VarChar(64)
+  session_id   String   @unique @db.VarChar(64)
+  user_id      String?  @db.Uuid
+  first_path   String   @db.VarChar(2048)
+  current_path String   @db.VarChar(2048)
+  referrer     String?  @db.VarChar(2048)
+  device       String   @db.VarChar(100)
+  page_views   Int      @default(1)
+  started_at   DateTime @default(now())
+  last_seen_at DateTime @default(now())
+
+  user         User?    @relation(fields: [user_id], references: [id], onDelete: SetNull)
+
+  @@index([visitor_id])
+  @@index([user_id])
+  @@index([last_seen_at])
+  @@index([started_at])
+  @@map("visitor_sessions")
 }
 
 model Address {

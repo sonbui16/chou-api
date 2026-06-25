@@ -1,12 +1,10 @@
-import path from 'node:path'
-import crypto from 'node:crypto'
-import { fileURLToPath } from 'node:url'
-import multer from 'multer'
-import { ApiError } from './ApiError.js'
+const path = require('node:path')
+const crypto = require('node:crypto')
+const multer = require('multer')
+const { ApiError } = require('@/lib/ApiError.js')
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url))
 // chou-api/uploads (cùng cấp với src/)
-export const UPLOAD_DIR = path.resolve(__dirname, '..', '..', 'uploads')
+const UPLOAD_DIR = path.resolve(__dirname, '..', '..', 'uploads')
 
 const storage = multer.diskStorage({
   destination: (_req, _file, cb) => cb(null, UPLOAD_DIR),
@@ -28,4 +26,6 @@ const upload = multer({
 })
 
 /** Middleware nhận tối đa 8 ảnh ở field `files`. */
-export const uploadImages = upload.array('files', 8)
+const uploadImages = upload.array('files', 8)
+
+module.exports = { UPLOAD_DIR, uploadImages }

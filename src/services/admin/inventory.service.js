@@ -1,9 +1,9 @@
-import { prisma } from '../../lib/prisma.js'
-import { ApiError } from '../../lib/ApiError.js'
-import { nextAssetCodes } from '../../lib/assetCode.js'
+const { prisma } = require('@/lib/prisma.js')
+const { ApiError } = require('@/lib/ApiError.js')
+const { nextAssetCodes } = require('@/lib/assetCode.js')
 
 /** Thêm `quantity` bản váy thật vào 1 biến thể, tự sinh mã CD-#### nối tiếp. */
-export async function addInventoryItems(variantId, { quantity, condition, acquired_at }) {
+async function addInventoryItems(variantId, { quantity, condition, acquired_at }) {
   const variant = await prisma.productVariant.findUnique({ where: { id: variantId }, select: { id: true } })
   if (!variant) throw ApiError.notFound('Không tìm thấy biến thể')
 
@@ -26,7 +26,7 @@ export async function addInventoryItems(variantId, { quantity, condition, acquir
 }
 
 /** Xoá 1 bản váy. Chặn nếu đã từng phát sinh đơn thuê (gợi ý 'Ngừng dùng'). */
-export async function deleteInventoryItem(id) {
+async function deleteInventoryItem(id) {
   const used = await prisma.rentalItem.count({ where: { item_id: id } })
   if (used > 0) {
     throw ApiError.conflict('Bản váy này đã từng cho thuê, không thể xoá. Hãy đổi trạng thái thành "Ngừng dùng".')
@@ -40,7 +40,7 @@ export async function deleteInventoryItem(id) {
   return { ok: true }
 }
 
-export function listInventory(status) {
+function listInventory(status) {
   return prisma.inventoryItem.findMany({
     where: status ? { status } : undefined,
     include: { variant: { include: { product: true, size: true, color: true } } },
@@ -48,10 +48,12 @@ export function listInventory(status) {
   })
 }
 
-export async function updateInventoryItem(id, data) {
+async function updateInventoryItem(id, data) {
   try {
     return await prisma.inventoryItem.update({ where: { id }, data })
   } catch {
     throw ApiError.notFound('Không tìm thấy bản váy')
   }
 }
+
+module.exports = { addInventoryItems, deleteInventoryItem, listInventory, updateInventoryItem }

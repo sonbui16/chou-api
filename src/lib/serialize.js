@@ -5,7 +5,7 @@
  *  - Date            -> ISO string
  * Đệ quy qua object/array.
  */
-export function serialize(value) {
+function serialize(value) {
   if (value === null || value === undefined) return value
   if (typeof value === 'bigint') return Number(value)
   if (value instanceof Date) return value.toISOString()
@@ -23,6 +23,8 @@ export function serialize(value) {
 }
 
 /** Helper trả JSON đã serialize. */
-export function sendJson(res, data, status = 200) {
+function sendJson(res, data, status = 200) {
   res.status(status).json(serialize(data))
 }
+
+module.exports = { serialize, sendJson }

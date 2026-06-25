@@ -1,6 +1,7 @@
-import 'dotenv/config'
-import bcrypt from 'bcryptjs'
-import { prisma } from '../src/lib/prisma.js'
+require('module-alias/register')
+require('dotenv/config')
+const bcrypt = require('bcryptjs')
+const { prisma } = require('@/lib/prisma.js')
 
 const IMG = (id) => `https://images.unsplash.com/${id}?w=900&q=80&auto=format&fit=crop`
 const PHOTOS = [

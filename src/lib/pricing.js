@@ -1,7 +1,7 @@
-import { rentalDays } from './dates.js'
+const { rentalDays } = require('@/lib/dates.js')
 
 /** Tính giảm giá từ coupon đối với subtotal. Trả { discount, reason }. */
-export function couponDiscount(coupon, subtotal, today = new Date()) {
+function couponDiscount(coupon, subtotal, today = new Date()) {
   if (!coupon) return { discount: 0 }
   if (!coupon.is_active) return { discount: 0, reason: 'Mã không còn hiệu lực' }
   if (coupon.valid_from && new Date(coupon.valid_from) > today)
@@ -27,7 +27,7 @@ export function couponDiscount(coupon, subtotal, today = new Date()) {
  * Tính các khoản tiền của đơn.
  * lines: [{ unit_price, deposit, start, end }]
  */
-export function computeTotals(lines, { fulfillment, coupon, settings }) {
+function computeTotals(lines, { fulfillment, coupon, settings }) {
   const priced = lines.map((l) => {
     const days = rentalDays(l.start, l.end)
     return { days, lineTotal: Number(l.unit_price) * days, deposit: Number(l.deposit) }
@@ -49,3 +49,5 @@ export function computeTotals(lines, { fulfillment, coupon, settings }) {
     lines: priced,
   }
 }
+
+module.exports = { couponDiscount, computeTotals }

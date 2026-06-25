@@ -1,13 +1,15 @@
-import 'dotenv/config'
-import jwt from 'jsonwebtoken'
+require('dotenv/config')
+const jwt = require('jsonwebtoken')
 
 const SECRET = process.env.JWT_SECRET ?? 'dev-secret'
 const EXPIRES_IN = process.env.JWT_EXPIRES_IN ?? '7d'
 
-export function signToken(payload) {
+function signToken(payload) {
   return jwt.sign(payload, SECRET, { expiresIn: EXPIRES_IN })
 }
 
-export function verifyToken(token) {
+function verifyToken(token) {
   return jwt.verify(token, SECRET)
 }
+
+module.exports = { signToken, verifyToken }

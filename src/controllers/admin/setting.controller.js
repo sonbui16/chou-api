@@ -1,9 +1,11 @@
-import { asyncHandler } from '../../lib/ApiError.js'
-import { sendJson } from '../../lib/serialize.js'
-import * as settings from '../../services/admin/setting.service.js'
+const { asyncHandler } = require('@/lib/ApiError.js')
+const { sendJson } = require('@/lib/serialize.js')
+const settings = require('@/services/admin/setting.service.js')
 
-export const listSettings = asyncHandler(async (_req, res) => sendJson(res, await settings.listSettings()))
+const listSettings = asyncHandler(async (_req, res) => sendJson(res, await settings.listSettings()))
 
-export const updateSettings = asyncHandler(async (req, res) =>
+const updateSettings = asyncHandler(async (req, res) =>
   sendJson(res, await settings.updateSettings(req.valid.body)),
 )
+
+module.exports = { listSettings, updateSettings }

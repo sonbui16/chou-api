@@ -1,4 +1,4 @@
-import { prisma } from './prisma.js'
+const { prisma } = require('@/lib/prisma.js')
 
 const DEFAULTS = {
   cleaning_buffer_days: 1,
@@ -8,7 +8,7 @@ const DEFAULTS = {
 }
 
 /** Đọc toàn bộ settings (key-value JSONB) thành object phẳng + giá trị mặc định. */
-export async function getSettings() {
+async function getSettings() {
   const rows = await prisma.setting.findMany()
   const map = { ...DEFAULTS }
   for (const r of rows) {
@@ -17,4 +17,5 @@ export async function getSettings() {
   return map
 }
 
-export { DEFAULTS as SETTINGS_DEFAULTS }
+
+module.exports = { getSettings, SETTINGS_DEFAULTS: DEFAULTS }

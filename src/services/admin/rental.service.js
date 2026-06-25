@@ -1,5 +1,5 @@
-import { prisma } from '../../lib/prisma.js'
-import { ApiError } from '../../lib/ApiError.js'
+const { prisma } = require('@/lib/prisma.js')
+const { ApiError } = require('@/lib/ApiError.js')
 
 const rentalInclude = {
   items: true,
@@ -8,7 +8,7 @@ const rentalInclude = {
   customer: { select: { id: true, full_name: true, email: true, phone: true } },
 }
 
-export function listRentals(status) {
+function listRentals(status) {
   return prisma.rental.findMany({
     where: status ? { status } : undefined,
     include: rentalInclude,
@@ -16,13 +16,13 @@ export function listRentals(status) {
   })
 }
 
-export async function getRental(id) {
+async function getRental(id) {
   const r = await prisma.rental.findUnique({ where: { id }, include: rentalInclude })
   if (!r) throw ApiError.notFound('Không tìm thấy đơn')
   return r
 }
 
-export async function updateRentalStatus(id, status, condition_in) {
+async function updateRentalStatus(id, status, condition_in) {
   const rental = await prisma.rental.findUnique({ where: { id } })
   if (!rental) throw ApiError.notFound('Không tìm thấy đơn')
 
@@ -44,7 +44,7 @@ export async function updateRentalStatus(id, status, condition_in) {
   })
 }
 
-export async function refundDeposit(id) {
+async function refundDeposit(id) {
   const rental = await prisma.rental.findUnique({ where: { id }, include: { payments: true } })
   if (!rental) throw ApiError.notFound('Không tìm thấy đơn')
   if (rental.payments.some((p) => p.kind === 'deposit_refund')) {
@@ -65,3 +65,5 @@ export async function refundDeposit(id) {
     return tx.rental.update({ where: { id }, data: { status: 'completed' }, include: rentalInclude })
   })
 }
+
+module.exports = { listRentals, getRental, updateRentalStatus, refundDeposit }

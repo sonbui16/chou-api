@@ -1,12 +1,14 @@
-import 'dotenv/config'
-import express from 'express'
-import helmet from 'helmet'
-import cors from 'cors'
-import morgan from 'morgan'
-import rateLimit from 'express-rate-limit'
-import routes from './routes/index.js'
-import { notFound, errorHandler } from './middlewares/error.js'
-import { UPLOAD_DIR } from './lib/upload.js'
+require('module-alias/register')
+require('dotenv/config')
+const express = require('express')
+const helmet = require('helmet')
+const cors = require('cors')
+const morgan = require('morgan')
+const rateLimit = require('express-rate-limit')
+const routes = require('@/routes/index.js')
+const { notFound, errorHandler } = require('@/middlewares/error.js')
+const { UPLOAD_DIR } = require('@/lib/upload.js')
+const { startPresenceCleanup } = require('@/lib/presenceCleanup.js')
 
 const app = express()
 
@@ -43,4 +45,10 @@ app.use('/api', routes)
 app.use(notFound)
 app.use(errorHandler)
 
-export default app
+const PORT = process.env.PORT ?? 4000
+
+app.listen(PORT, () => {
+  console.log(`✅ chou-api đang chạy tại http://localhost:${PORT}`)
+})
+
+startPresenceCleanup()

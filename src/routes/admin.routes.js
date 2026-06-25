@@ -1,18 +1,19 @@
-import { Router } from 'express'
-import { validate } from '../middlewares/validate.js'
-import { requireAdmin } from '../middlewares/auth.js'
-import { uploadImages } from '../lib/upload.js'
-import * as dashboard from '../controllers/admin/dashboard.controller.js'
-import * as product from '../controllers/admin/product.controller.js'
-import * as variant from '../controllers/admin/variant.controller.js'
-import * as image from '../controllers/admin/image.controller.js'
-import * as inventory from '../controllers/admin/inventory.controller.js'
-import * as rental from '../controllers/admin/rental.controller.js'
-import * as payment from '../controllers/admin/payment.controller.js'
-import * as customer from '../controllers/admin/customer.controller.js'
-import * as coupon from '../controllers/admin/coupon.controller.js'
-import * as setting from '../controllers/admin/setting.controller.js'
-import * as V from '../validators/index.js'
+const { Router } = require('express')
+const { validate } = require('@/middlewares/validate.js')
+const { requireAdmin } = require('@/middlewares/auth.js')
+const { uploadImages } = require('@/lib/upload.js')
+const dashboard = require('@/controllers/admin/dashboard.controller.js')
+const product = require('@/controllers/admin/product.controller.js')
+const variant = require('@/controllers/admin/variant.controller.js')
+const image = require('@/controllers/admin/image.controller.js')
+const inventory = require('@/controllers/admin/inventory.controller.js')
+const rental = require('@/controllers/admin/rental.controller.js')
+const payment = require('@/controllers/admin/payment.controller.js')
+const customer = require('@/controllers/admin/customer.controller.js')
+const coupon = require('@/controllers/admin/coupon.controller.js')
+const setting = require('@/controllers/admin/setting.controller.js')
+const visitor = require('@/controllers/admin/visitor.controller.js')
+const V = require('@/validators/index.js')
 
 const r = Router()
 
@@ -20,6 +21,8 @@ const r = Router()
 r.use(requireAdmin)
 
 r.get('/stats', dashboard.stats)
+r.get('/visitors/summary', visitor.summary)
+r.get('/visitors', validate(V.adminVisitorsQuerySchema), visitor.listVisitors)
 
 r.get('/products', product.listProducts)
 r.get('/products/:id', validate(V.idParamSchema), product.getProduct)
@@ -57,4 +60,4 @@ r.delete('/coupons/:id', validate(V.idParamSchema), coupon.deleteCoupon)
 r.get('/settings', setting.listSettings)
 r.put('/settings', validate(V.updateSettingsSchema), setting.updateSettings)
 
-export default r
+module.exports = r

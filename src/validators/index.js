@@ -1,10 +1,10 @@
-import { z } from 'zod'
+const { z } = require('zod')
 
 const uuid = z.string().uuid()
 const isoDateStr = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Định dạng ngày YYYY-MM-DD')
 
 /* ---------------- Catalog ---------------- */
-export const listProductsSchema = z.object({
+const listProductsSchema = z.object({
   query: z.object({
     cat: z.string().optional(),
     size: z.coerce.number().int().optional(),
@@ -16,17 +16,17 @@ export const listProductsSchema = z.object({
   }),
 })
 
-export const productSlugSchema = z.object({
+const productSlugSchema = z.object({
   params: z.object({ slug: z.string().min(1) }),
 })
 
-export const availabilitySchema = z.object({
+const availabilitySchema = z.object({
   params: z.object({ slug: z.string().min(1) }),
   query: z.object({ variantId: uuid, start: isoDateStr, end: isoDateStr }),
 })
 
 /* ---------------- Auth ---------------- */
-export const registerSchema = z.object({
+const registerSchema = z.object({
   body: z.object({
     full_name: z.string().min(2),
     email: z.string().email(),
@@ -35,8 +35,29 @@ export const registerSchema = z.object({
   }),
 })
 
-export const loginSchema = z.object({
+const loginSchema = z.object({
   body: z.object({ email: z.string().email(), password: z.string().min(1) }),
+})
+
+/* ---------------- Presence ---------------- */
+const presenceId = z.string().min(16).max(64).regex(/^[a-zA-Z0-9_-]+$/)
+const presenceHeartbeatSchema = z.object({
+  body: z.object({
+    visitor_id: presenceId,
+    session_id: presenceId,
+    path: z.string().min(1).max(2048).startsWith('/'),
+    referrer: z.string().max(2048).nullish(),
+    event: z.enum(['heartbeat', 'pageview', 'visible']),
+  }),
+})
+
+const adminVisitorsQuerySchema = z.object({
+  query: z.object({
+    status: z.enum(['online', 'recent']).default('online'),
+    page: z.coerce.number().int().min(1).default(1),
+    limit: z.coerce.number().int().min(1).max(100).default(20),
+    search: z.string().trim().max(100).optional().default(''),
+  }),
 })
 
 /* ---------------- Address ---------------- */
@@ -49,15 +70,15 @@ const addressFields = {
   province: z.string().min(1),
   is_default: z.boolean().optional(),
 }
-export const createAddressSchema = z.object({ body: z.object(addressFields) })
-export const updateAddressSchema = z.object({
+const createAddressSchema = z.object({ body: z.object(addressFields) })
+const updateAddressSchema = z.object({
   params: z.object({ id: uuid }),
   body: z.object(addressFields).partial(),
 })
-export const idParamSchema = z.object({ params: z.object({ id: uuid }) })
+const idParamSchema = z.object({ params: z.object({ id: uuid }) })
 
 /* ---------------- Rentals ---------------- */
-export const createRentalSchema = z.object({
+const createRentalSchema = z.object({
   body: z.object({
     fulfillment: z.enum(['pickup', 'delivery']),
     address_id: uuid.nullish(),
@@ -69,10 +90,10 @@ export const createRentalSchema = z.object({
       .min(1),
   }),
 })
-export const rentalNoSchema = z.object({ params: z.object({ rentalNo: z.string().min(1) }) })
+const rentalNoSchema = z.object({ params: z.object({ rentalNo: z.string().min(1) }) })
 
 /* ---------------- Reviews ---------------- */
-export const reviewSchema = z.object({
+const reviewSchema = z.object({
   body: z.object({
     product_id: uuid,
     rental_id: uuid.nullish(),
@@ -82,7 +103,7 @@ export const reviewSchema = z.object({
 })
 
 /* ---------------- Coupons ---------------- */
-export const validateCouponSchema = z.object({
+const validateCouponSchema = z.object({
   body: z.object({ code: z.string().min(1), subtotal: z.coerce.number().min(0) }),
 })
 const couponFields = {
@@ -96,13 +117,13 @@ const couponFields = {
   usage_limit: z.coerce.number().int().min(0).nullish(),
   is_active: z.boolean().default(true),
 }
-export const saveCouponSchema = z.object({
+const saveCouponSchema = z.object({
   params: z.object({ id: uuid }).partial(),
   body: z.object(couponFields),
 })
 
 /* ---------------- Admin: products / inventory / rentals / settings ---------------- */
-export const saveProductSchema = z.object({
+const saveProductSchema = z.object({
   params: z.object({ id: uuid }).partial(),
   body: z.object({
     category_id: uuid.nullish(),
@@ -116,7 +137,7 @@ export const saveProductSchema = z.object({
   }),
 })
 
-export const inventoryUpdateSchema = z.object({
+const inventoryUpdateSchema = z.object({
   params: z.object({ id: uuid }),
   body: z.object({
     status: z.enum(['available', 'rented', 'cleaning', 'repairing', 'retired']).optional(),
@@ -125,7 +146,7 @@ export const inventoryUpdateSchema = z.object({
   }),
 })
 
-export const rentalStatusSchema = z.object({
+const rentalStatusSchema = z.object({
   params: z.object({ id: uuid }),
   body: z.object({
     status: z.enum(['pending', 'confirmed', 'in_use', 'returned', 'completed', 'cancelled', 'overdue']),
@@ -133,7 +154,7 @@ export const rentalStatusSchema = z.object({
   }),
 })
 
-export const adminRentalsQuerySchema = z.object({
+const adminRentalsQuerySchema = z.object({
   query: z.object({
     status: z
       .enum(['pending', 'confirmed', 'in_use', 'returned', 'completed', 'cancelled', 'overdue'])
@@ -141,20 +162,20 @@ export const adminRentalsQuerySchema = z.object({
   }),
 })
 
-export const inventoryQuerySchema = z.object({
+const inventoryQuerySchema = z.object({
   query: z.object({
     status: z.enum(['available', 'rented', 'cleaning', 'repairing', 'retired']).optional(),
   }),
 })
 
-export const updateSettingsSchema = z.object({
+const updateSettingsSchema = z.object({
   body: z.record(z.string(), z.any()),
 })
 
 /* ---------------- Admin: variants / inventory intake / images ---------------- */
 const itemCondition = z.enum(['new', 'good', 'fair', 'worn', 'damaged'])
 
-export const createVariantSchema = z.object({
+const createVariantSchema = z.object({
   params: z.object({ id: uuid }),
   body: z.object({
     size_id: z.coerce.number().int().nullish(),
@@ -164,7 +185,7 @@ export const createVariantSchema = z.object({
   }),
 })
 
-export const addInventorySchema = z.object({
+const addInventorySchema = z.object({
   params: z.object({ id: uuid }),
   body: z.object({
     quantity: z.coerce.number().int().min(1).max(50),
@@ -172,3 +193,5 @@ export const addInventorySchema = z.object({
     acquired_at: isoDateStr.optional(),
   }),
 })
+
+module.exports = { listProductsSchema, productSlugSchema, availabilitySchema, registerSchema, loginSchema, presenceHeartbeatSchema, adminVisitorsQuerySchema, createAddressSchema, updateAddressSchema, idParamSchema, createRentalSchema, rentalNoSchema, reviewSchema, validateCouponSchema, saveCouponSchema, saveProductSchema, inventoryUpdateSchema, rentalStatusSchema, adminRentalsQuerySchema, inventoryQuerySchema, updateSettingsSchema, createVariantSchema, addInventorySchema }

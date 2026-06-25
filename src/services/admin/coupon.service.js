@@ -1,16 +1,18 @@
-import { prisma } from '../../lib/prisma.js'
+const { prisma } = require('@/lib/prisma.js')
 
-export function listCoupons() {
+function listCoupons() {
   return prisma.coupon.findMany({ orderBy: { created_at: 'desc' } })
 }
 
-export async function saveCoupon(id, data) {
+async function saveCoupon(id, data) {
   const payload = { ...data, code: data.code.toUpperCase().trim() }
   if (id) return prisma.coupon.update({ where: { id }, data: payload })
   return prisma.coupon.create({ data: payload })
 }
 
-export async function deleteCoupon(id) {
+async function deleteCoupon(id) {
   await prisma.coupon.delete({ where: { id } })
   return { ok: true }
 }
+
+module.exports = { listCoupons, saveCoupon, deleteCoupon }

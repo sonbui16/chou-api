@@ -2,11 +2,10 @@
   "name": "chou-api",
   "version": "0.1.0",
   "private": true,
-  "type": "module",
   "description": "Chou Dress — Backend API (Express + Prisma + PostgreSQL)",
   "scripts": {
-    "dev": "node --watch src/server.js",
-    "start": "node src/server.js",
+    "dev": "node --watch server.js",
+    "start": "node server.js",
     "migrate": "prisma migrate dev",
     "generate": "prisma generate",
     "seed": "node prisma/seed.js",
@@ -14,6 +13,9 @@
   },
   "prisma": {
     "seed": "node prisma/seed.js"
+  },
+  "_moduleAliases": {
+    "@": "src"
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.8.0",
@@ -25,6 +27,7 @@
     "express-rate-limit": "^7.5.0",
     "helmet": "^8.0.0",
     "jsonwebtoken": "^9.0.2",
+    "module-alias": "^2.3.4",
     "morgan": "^1.10.0",
     "multer": "^2.2.0",
     "zod": "^3.24.1"

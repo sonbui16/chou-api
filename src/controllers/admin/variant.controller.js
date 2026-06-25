@@ -1,11 +1,13 @@
-import { asyncHandler } from '../../lib/ApiError.js'
-import { sendJson } from '../../lib/serialize.js'
-import * as variants from '../../services/admin/variant.service.js'
+const { asyncHandler } = require('@/lib/ApiError.js')
+const { sendJson } = require('@/lib/serialize.js')
+const variants = require('@/services/admin/variant.service.js')
 
-export const createVariant = asyncHandler(async (req, res) =>
+const createVariant = asyncHandler(async (req, res) =>
   sendJson(res, await variants.createVariant(req.valid.params.id, req.valid.body), 201),
 )
 
-export const deleteVariant = asyncHandler(async (req, res) =>
+const deleteVariant = asyncHandler(async (req, res) =>
   sendJson(res, await variants.deleteVariant(req.valid.params.id)),
 )
+
+module.exports = { createVariant, deleteVariant }

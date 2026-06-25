@@ -1,7 +1,7 @@
-import { prisma } from '../../lib/prisma.js'
+const { prisma } = require('@/lib/prisma.js')
 
 /** Số liệu tổng quan cho dashboard quản trị. */
-export async function getStats() {
+async function getStats() {
   const [payments, rentals, inventory] = await Promise.all([
     prisma.payment.findMany({ where: { status: 'paid' } }),
     prisma.rental.findMany({ select: { status: true } }),
@@ -39,3 +39,5 @@ export async function getStats() {
     recent,
   }
 }
+
+module.exports = { getStats }
