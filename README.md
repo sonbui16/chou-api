@@ -7,13 +7,11 @@ Sẵn sàng để `chou-ui` (storefront) và `chou-admin` ghép vào.
 
 ```bash
 npm install
-# .env đã cấu hình: postgresql://postgres:***@localhost:5432/chou-dress
+# .env: cấu hình DB qua DB_HOST/DB_PORT/DB_USER/DB_PASSWORD/DB_NAME (xem .env.example)
 npx prisma migrate dev      # tạo bảng + ràng buộc
 npm run seed                # nạp dữ liệu mẫu (12 váy, users, coupon, đơn)
 npm run dev                 # http://localhost:4000
 ```
-
-Kiểm tra: `GET http://localhost:4000/health`.
 
 ## Tài khoản demo (sau khi seed)
 - Admin: `admin@chou.vn` / `admin123`
@@ -50,4 +48,19 @@ CORS đã mở cho `http://localhost:5173`.
 
 
 1.tạo ra 1 định dạng chuẩn response.tạo ra 1 response.middlewares.js
+const response  = (_res, req, next) =>{
+    res.success= (data, status=200) =>{
+        res.status(status).json({
+            status:"success",
+            data
+        })
+    },
+     res.error= (data, status=400) =>{
+        res.status(status).json({
+            status:"error",
+            error
+        })
+    }
+}
+module.exports = response
 1.tạo .env đầu tiên sử dụng dotenv

@@ -1,6 +1,6 @@
 const { Router } = require('express')
-const { validate } = require('@/middlewares/validate.js')
-const { requireAdmin } = require('@/middlewares/auth.js')
+const { validate } = require('@/middlewares/validate.middleware.js')
+const { requireAdmin } = require('@/middlewares/auth.middleware.js')
 const { uploadImages } = require('@/lib/upload.js')
 const dashboard = require('@/controllers/admin/dashboard.controller.js')
 const product = require('@/controllers/admin/product.controller.js')

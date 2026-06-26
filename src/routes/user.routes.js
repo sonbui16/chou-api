@@ -1,6 +1,6 @@
 const { Router } = require('express')
-const { validate } = require('@/middlewares/validate.js')
-const { optionalAuth, requireAuth } = require('@/middlewares/auth.js')
+const { validate } = require('@/middlewares/validate.middleware.js')
+const { optionalAuth, requireAuth } = require('@/middlewares/auth.middleware.js')
 const rateLimit = require('express-rate-limit')
 const catalog = require('@/controllers/user/catalog.controller.js')
 const auth = require('@/controllers/user/auth.controller.js')

@@ -22,9 +22,4 @@ function serialize(value) {
   return value
 }
 
-/** Helper trả JSON đã serialize. */
-function sendJson(res, data, status = 200) {
-  res.status(status).json(serialize(data))
-}
-
-module.exports = { serialize, sendJson }
+module.exports = { serialize }

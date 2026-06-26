@@ -1,5 +1,4 @@
 const { asyncHandler } = require('@/lib/ApiError.js')
-const { sendJson } = require('@/lib/serialize.js')
 const presence = require('@/services/user/presence.service.js')
 
 const heartbeat = asyncHandler(async (req, res) => {
@@ -8,7 +7,7 @@ const heartbeat = asyncHandler(async (req, res) => {
     userId: req.user?.id ?? null,
     userAgent: req.get('user-agent') ?? '',
   })
-  sendJson(res, session)
+  res.success(session)
 })
 
 module.exports = { heartbeat }

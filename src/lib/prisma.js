@@ -3,7 +3,14 @@ const { PrismaClient } = require('@prisma/client')
 const { PrismaPg } = require('@prisma/adapter-pg')
 
 // Prisma 7 dùng driver adapter cho kết nối (không còn `url` trong schema).
-const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL })
+// Cấu hình qua các biến DB_* rời (host/port/user/password/name).
+const adapter = new PrismaPg({
+  host: process.env.DB_HOST,
+  port: Number(process.env.DB_PORT),
+  user: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  database: process.env.DB_NAME,
+})
 
 const globalForPrisma = globalThis
 const prisma =

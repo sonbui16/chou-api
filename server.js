@@ -6,7 +6,9 @@ const cors = require('cors')
 const morgan = require('morgan')
 const rateLimit = require('express-rate-limit')
 const routes = require('@/routes/index.js')
-const { notFound, errorHandler } = require('@/middlewares/error.js')
+const response = require('@/middlewares/response.middleware.js')
+const notFound = require('@/middlewares/notFound.middleware.js')
+const errorHandler = require('@/middlewares/errorHandler.middleware.js')
 const { UPLOAD_DIR } = require('@/lib/upload.js')
 const { startPresenceCleanup } = require('@/lib/presenceCleanup.js')
 
@@ -33,13 +35,15 @@ app.use(cors({ origin: corsOrigin, credentials: true }))
 app.use(express.json())
 if (process.env.NODE_ENV !== 'test') app.use(morgan('dev'))
 
+// Chuẩn hoá response: gắn res.success() / res.error() cho mọi route
+app.use(response)
+
 // Ảnh sản phẩm tải lên (multer) — phục vụ tĩnh
 app.use('/uploads', express.static(UPLOAD_DIR))
 
 // Giới hạn brute-force cho auth
 app.use('/api/auth', rateLimit({ windowMs: 15 * 60 * 1000, max: 50, standardHeaders: true, legacyHeaders: false }))
 
-app.get('/health', (_req, res) => res.json({ ok: true, service: 'chou-api' }))
 app.use('/api', routes)
 
 app.use(notFound)
