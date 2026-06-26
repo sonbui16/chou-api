@@ -25,6 +25,10 @@ dùng **tiếng Việt**, tiền tệ **VND** (số nguyên đồng).
 còn `DATABASE_URL`) · `PORT=4000` · `JWT_SECRET` · `JWT_EXPIRES_IN=7d` ·
 `CORS_ORIGINS="http://localhost:5173,http://localhost:5174"` · `NODE_ENV` · `PG_DUMP` (đường dẫn
 binary `pg_dump` cho job backup — fallback Postgres.app, vd `/Applications/Postgres.app/Contents/Versions/17/bin/pg_dump`).
+- **Backup → Google Drive** (job `backupDB`): `GOOGLE_CLIENT_ID` · `GOOGLE_CLIENT_SECRET` ·
+  `GOOGLE_REFRESH_TOKEN` (lấy 1 lần qua consent, xem `scripts/getGoogleToken.js`) ·
+  `GOOGLE_DRIVE_FOLDER_ID` (ID folder đích, lấy từ URL `drive.google.com/drive/folders/<ID>`) ·
+  `GOOGLE_REDIRECT_URI` (tuỳ chọn, mặc định `http://localhost`).
 
 ## Cấu trúc — TÁCH BẠCH User vs Admin (folder theo đối tượng)
 ```
@@ -45,10 +49,11 @@ src/
     user/  auth · catalog · address · rental · review · coupon (validate)
     admin/ dashboard · product · variant · image · inventory · rental · payment · customer · coupon · setting
   middlewares/ validate.middleware.js · auth.middleware.js · response.middleware.js · notFound.middleware.js · errorHandler.middleware.js
-  schedules/   backupDB.js (pg_dump → backups/, xoá bản >30 ngày) · dailyRepost.js
+  schedules/   backupDB.js (pg_dump → zip → upload Drive → xoá bản >30 ngày) · dailyRepost.js
   validators/  index.js      # mọi zod schema (dùng chung user & admin)
-  lib/         prisma · ApiError · serialize · jwt · settings · availability · pricing · dates · upload · assetCode · presenceCleanup
-backups/                     # file .sql do job backupDB sinh ra (gitignored)
+  lib/         prisma · ApiError · serialize · jwt · settings · availability · pricing · dates · upload · assetCode · presenceCleanup · googleDrive
+scripts/       getGoogleToken.js  # chạy 1 lần lấy GOOGLE_REFRESH_TOKEN qua OAuth consent
+backups/                     # file .zip do job backupDB sinh ra (gitignored)
 ```
 Ảnh: **multer** (`lib/upload.js`, field `files`, ≤5MB) lưu vào `uploads/`, phục vụ tĩnh `app.use('/uploads', ...)`;
 `helmet({ crossOriginResourcePolicy: 'cross-origin' })` để FE :5173/:5174 load được ảnh. URL ảnh lưu **tuyệt đối**
@@ -105,11 +110,30 @@ Mỗi resource = 1 cặp `*.controller.js` + `*.service.js`. Controller **mỏng
   (package `cron`). Mỗi job = 1 file trong `src/schedules/` export 1 hàm (`module.exports = fn`).
 - **Cú pháp cron 6 trường** (có giây): `giây phút giờ ngày tháng thứ`. Vd `0 0 3 * * *` = 3h sáng mỗi ngày;
   `*/10 * * * * *` = mỗi 10 giây (chỉ dùng để TEST — nhớ đổi lại trước khi chạy thật).
-- **`backupDB.js`**: gọi `pg_dump` qua `spawn` với **đường dẫn binary đầy đủ** (`process.env.PG_DUMP`,
-  fallback Postgres.app) — KHÔNG dựa vào PATH (Node spawn không có shell). Ghi ra file bằng cờ `-f`
-  (KHÔNG dùng `>` — spawn không qua shell nên redirect không chạy). Tên file gắn ngày `YYYY-MM-DD`
-  vào `backups/`; sau khi `close` code 0 thì dọn các file cũ hơn 30 ngày. Tham số host/port/user/db
-  lấy từ biến `DB_*`, mật khẩu truyền qua env `PGPASSWORD`.
+- **`backupDB.js`** — pipeline 4 bước, mỗi bước chỉ chạy khi bước trước `close` code 0:
+  1. **Dump**: `pg_dump` qua `spawn` với **đường dẫn binary đầy đủ** (`process.env.PG_DUMP`, fallback
+     Postgres.app) — KHÔNG dựa vào PATH (Node spawn không có shell). Ghi ra file bằng cờ `-f` (KHÔNG
+     dùng `>` — spawn không qua shell nên redirect không chạy). Tên `<DB_NAME>-YYYY-MM-DD.sql` trong
+     `backups/`. Tham số host/port/user/db lấy từ biến `DB_*`, mật khẩu truyền qua env `PGPASSWORD`.
+  2. **Nén**: `zip -j -q <file>.zip <file>.sql` (cwd = `backups/`; `-j` bỏ path, `-q` im lặng) → xong
+     thì `unlinkSync` xoá `.sql`, chỉ giữ `.zip`. (`zip` là binary hệ thống — sẵn trên macOS.)
+  3. **Upload Drive**: `lib/googleDrive.uploadToDrive(zipFile)` → `drive.files.create` với
+     `parents:[GOOGLE_DRIVE_FOLDER_ID]`, `media` = `fs.createReadStream(zip)`. Lỗi upload KHÔNG chặn
+     bước dọn (dùng `.catch().finally(cleanupOldBackups)`).
+  4. **Dọn**: xoá file trong `backups/` cũ hơn `MAX_AGE_DAYS` (30).
+- **Google Drive (`lib/googleDrive.js`)**: OAuth2 `google.auth.OAuth2(CLIENT_ID, CLIENT_SECRET,
+  REDIRECT_URI)` + `setCredentials({ refresh_token })`. Cron chạy nền không mở được trình duyệt →
+  **BẮT BUỘC refresh_token**, chỉ client id/secret là KHÔNG đủ. Folder đích đọc thẳng từ
+  `GOOGLE_DRIVE_FOLDER_ID` (folder tạo tay trên Drive) — KHÔNG tìm theo tên (scope `drive.file` không
+  `files.list` thấy folder do người dùng tạo).
+- **Lấy refresh token (1 lần)**: `node scripts/getGoogleToken.js` — `generateAuthUrl({ access_type:
+  'offline', prompt: 'consent', scope: ['…/auth/drive.file'] })`, mở link → đồng ý → dán `code` →
+  in ra `GOOGLE_REFRESH_TOKEN` để bỏ vào `.env`. Setup Google Cloud: bật **Drive API**, tạo **OAuth
+  client (Desktop app)**, thêm email vào **Test users** nếu app ở chế độ Testing.
+- **Cạm bẫy**: scope `drive.file` chỉ thấy/sửa file do chính app tạo → upload file mới vào folder có
+  sẵn (qua `parents`) thì OK, nhưng KHÔNG liệt kê/sửa được file người dùng tạo tay (muốn rộng hơn đổi
+  scope `…/auth/drive` rồi lấy lại token). `googleDrive.js` được `backupDB.js` import qua alias
+  `@/lib/googleDrive.js` → `schedule.js` PHẢI nạp `require('module-alias/register')` ở dòng đầu.
 
 ## Hợp đồng URL (KHÔNG đổi nếu không cần — sẽ vỡ 2 frontend)
 - User `/api/...`: `categories,sizes,colors,products,products/:slug[/availability|/reviews],settings,

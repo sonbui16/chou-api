@@ -1,3 +1,4 @@
+require('module-alias/register');
 require("dotenv").config();
 const { CronJob } = require('cron');
 
@@ -7,7 +8,7 @@ const backupDB = require('./src/schedules/backupDB.js')
 // cronTime 2H SANG
 new CronJob('*/5 * * * * *', dailyReport, null, true);
 // cronTime 3H SANG
-new CronJob('0/10 * * * * *', backupDB, null, true); 
+new CronJob('0 0 3 * * *', backupDB, null, true); 
 
 
 

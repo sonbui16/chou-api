@@ -2,6 +2,7 @@ require("dotenv").config();
 const { spawn , exec } = require('node:child_process');
 const fs = require('node:fs');
 const path = require('node:path');
+const { uploadToDrive } = require('@/lib/googleDrive.js');
 
 const BACKUP_DIR = path.join(__dirname, '../../backups');
 const MAX_AGE_DAYS = 30;
@@ -51,7 +52,10 @@ function zipBackup(sqlFile) {
         if (code === 0) {
             fs.unlinkSync(sqlFile); // xoá .sql gốc, chỉ giữ .zip
             console.log('Nén xong:', zipFile);
-            cleanupOldBackups();
+            uploadToDrive(zipFile)
+                .then((f) => console.log('Upload Drive xong:', f.webViewLink || f.id))
+                .catch((err) => console.error('Upload Drive thất bại:', err.message))
+                .finally(cleanupOldBackups);
         } else {
             console.error(`zip thất bại, code ${code}`);
         }
