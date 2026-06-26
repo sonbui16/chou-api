@@ -1,5 +1,5 @@
 require("dotenv").config();
-const { spawn } = require('node:child_process');
+const { spawn , exec } = require('node:child_process');
 const fs = require('node:fs');
 const path = require('node:path');
 
@@ -31,11 +31,29 @@ function backupDB() {
     dump.on('error', (err) => console.error('Không chạy được pg_dump:', err));
     dump.on('close', (code) => {
         if (code === 0) {
-
             console.log('Backup xong:', file);
-            cleanupOldBackups();
+            zipBackup(file);
         } else {
             console.error(`pg_dump thất bại, code ${code}`);
+        }
+    });
+}
+
+// Nén file .sql thành .zip rồi xoá .sql, chỉ giữ .zip trong backups/
+function zipBackup(sqlFile) {
+    const zipFile = sqlFile.replace(/\.sql$/, '.zip');
+    // -j: bỏ đường dẫn, chỉ lưu tên file; -q: im lặng; chạy trong BACKUP_DIR để zip thấy file
+    const zip = spawn('zip', ['-j', '-q', zipFile, sqlFile], { cwd: BACKUP_DIR });
+
+    zip.stderr.on('data', (d) => console.error(`zip: ${d}`));
+    zip.on('error', (err) => console.error('Không chạy được zip:', err));
+    zip.on('close', (code) => {
+        if (code === 0) {
+            fs.unlinkSync(sqlFile); // xoá .sql gốc, chỉ giữ .zip
+            console.log('Nén xong:', zipFile);
+            cleanupOldBackups();
+        } else {
+            console.error(`zip thất bại, code ${code}`);
         }
     });
 }
