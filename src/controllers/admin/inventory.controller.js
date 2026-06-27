@@ -1,4 +1,5 @@
 const { asyncHandler } = require('@/lib/ApiError.js')
+const { httpCodes } = require('@/config/constants.js')
 const inventory = require('@/services/admin/inventory.service.js')
 
 const listInventory = asyncHandler(async (req, res) =>
@@ -10,7 +11,7 @@ const updateInventory = asyncHandler(async (req, res) =>
 )
 
 const addItems = asyncHandler(async (req, res) =>
-  res.success(await inventory.addInventoryItems(req.valid.params.id, req.valid.body), 201),
+  res.success(await inventory.addInventoryItems(req.valid.params.id, req.valid.body), httpCodes.created),
 )
 
 const deleteItem = asyncHandler(async (req, res) =>

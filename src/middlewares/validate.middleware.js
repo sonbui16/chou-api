@@ -1,4 +1,5 @@
 const { ApiError } = require('@/lib/ApiError.js')
+const { httpCodes } = require('@/config/constants.js')
 
 /**
  * validate(schema) — schema zod hình { body?, query?, params? }.
@@ -11,7 +12,7 @@ const validate = (schema) => (req, _res, next) => {
     params: req.params,
   })
   if (!result.success) {
-    return next(new ApiError(422, 'VALIDATION', 'Dữ liệu không hợp lệ', result.error.issues))
+    return next(new ApiError(httpCodes.unprocessableEntity, 'VALIDATION', 'Dữ liệu không hợp lệ', result.error.issues))
   }
   req.valid = result.data
   next()

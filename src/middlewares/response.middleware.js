@@ -1,4 +1,5 @@
 const { serialize } = require('@/lib/serialize.js')
+const { httpCodes } = require('@/config/constants.js')
 
 /**
  * Chuẩn hoá response — gắn 2 helper vào mọi `res`:
@@ -8,11 +9,11 @@ const { serialize } = require('@/lib/serialize.js')
  * theo đúng quy ước dự án.
  */
 const response = (_, res, next) => {
-  res.success = (data = null, status = 200) => {
+  res.success = (data = null, status = httpCodes.ok) => {
     res.status(status).json({ status: 'success', data: serialize(data) })
   }
 
-  res.error = (error = null, status = 400) => {
+  res.error = (error = null, status = httpCodes.badRequest) => {
     res.status(status).json({ status: 'error', error })
   }
 

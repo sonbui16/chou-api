@@ -1,0 +1,21 @@
+# systemd unit — tiến trình CRON nền (backup DB → zip → upload Drive). TÁCH RIÊNG khỏi HTTP server.
+# Cài: sudo cp deploy/chou-schedule.service /etc/systemd/system/
+#      sudo systemctl daemon-reload && sudo systemctl enable --now chou-schedule
+# Log: journalctl -u chou-schedule -f
+[Unit]
+Description=Chou Schedule (cron backup)
+After=network.target postgresql.service
+
+[Service]
+Type=simple
+User=YOUR_USER
+WorkingDirectory=/home/YOUR_USER/chou-api
+ExecStart=/usr/bin/node schedule.js
+Restart=on-failure
+RestartSec=5
+Environment=NODE_ENV=production
+# CronJob chạy theo timezone tiến trình → ép giờ VN để '0 0 3 * * *' = 3h sáng VN
+Environment=TZ=Asia/Ho_Chi_Minh
+
+[Install]
+WantedBy=multi-user.target

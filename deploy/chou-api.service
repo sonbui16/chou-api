@@ -1,0 +1,20 @@
+# systemd unit — HTTP API server. Thay YOUR_USER và đường dẫn cho đúng VPS.
+# Cài: sudo cp deploy/chou-api.service /etc/systemd/system/
+#      sudo systemctl daemon-reload && sudo systemctl enable --now chou-api
+# Log: journalctl -u chou-api -f
+[Unit]
+Description=Chou API (HTTP server)
+After=network.target postgresql.service
+
+[Service]
+Type=simple
+User=YOUR_USER
+WorkingDirectory=/home/YOUR_USER/chou-api
+# Đổi /usr/bin/node nếu dùng nvm: which node để lấy đường dẫn thật
+ExecStart=/usr/bin/node server.js
+Restart=on-failure
+RestartSec=5
+Environment=NODE_ENV=production
+
+[Install]
+WantedBy=multi-user.target

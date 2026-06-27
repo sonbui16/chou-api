@@ -2,6 +2,7 @@ const path = require('node:path')
 const crypto = require('node:crypto')
 const multer = require('multer')
 const { ApiError } = require('@/lib/ApiError.js')
+const { httpCodes } = require('@/config/constants.js')
 
 // chou-api/uploads (cùng cấp với src/)
 const UPLOAD_DIR = path.resolve(__dirname, '..', '..', 'uploads')
@@ -16,7 +17,7 @@ const storage = multer.diskStorage({
 
 const fileFilter = (_req, file, cb) => {
   if (/^image\/(jpe?g|png|webp|gif|avif)$/.test(file.mimetype)) return cb(null, true)
-  cb(new ApiError(400, 'BAD_REQUEST', 'Chỉ chấp nhận tệp ảnh (jpg, png, webp, gif, avif)'))
+  cb(new ApiError(httpCodes.badRequest, 'BAD_REQUEST', 'Chỉ chấp nhận tệp ảnh (jpg, png, webp, gif, avif)'))
 }
 
 const upload = multer({

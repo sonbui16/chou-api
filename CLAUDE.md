@@ -22,7 +22,8 @@ dùng **tiếng Việt**, tiền tệ **VND** (số nguyên đồng).
 
 ## Biến môi trường (`.env`, không commit)
 `DB_HOST` · `DB_PORT` · `DB_USER` · `DB_PASSWORD` · `DB_NAME` (postgres, các biến rời — KHÔNG
-còn `DATABASE_URL`) · `PORT=4000` · `JWT_SECRET` · `JWT_EXPIRES_IN=7d` ·
+còn `DATABASE_URL`) · `PORT=4000` · `AUTH_JWT_SECRET` · `AUTH_ACCESS_TOKEN_TTL=604800` (TTL access
+token dạng **số giây**, không dùng `"7d"`; 604800 = 7 ngày — `jwt.js` `Number()` nó để jsonwebtoken hiểu là giây) ·
 `CORS_ORIGINS="http://localhost:5173,http://localhost:5174"` · `NODE_ENV` · `PG_DUMP` (đường dẫn
 binary `pg_dump` cho job backup — fallback Postgres.app, vd `/Applications/Postgres.app/Contents/Versions/17/bin/pg_dump`).
 - **Backup → Google Drive** (job `backupDB`): `GOOGLE_CLIENT_ID` · `GOOGLE_CLIENT_SECRET` ·
@@ -51,6 +52,7 @@ src/
   middlewares/ validate.middleware.js · auth.middleware.js · response.middleware.js · notFound.middleware.js · errorHandler.middleware.js
   schedules/   backupDB.js (pg_dump → zip → upload Drive → xoá bản >30 ngày) · dailyRepost.js
   validators/  index.js      # mọi zod schema (dùng chung user & admin)
+  config/      constants.js  # hằng số dùng chung (httpCodes...) — tránh fix cứng/lặp code
   lib/         prisma · ApiError · serialize · jwt · settings · availability · pricing · dates · upload · assetCode · presenceCleanup · googleDrive
 scripts/       getGoogleToken.js  # chạy 1 lần lấy GOOGLE_REFRESH_TOKEN qua OAuth consent
 backups/                     # file .zip do job backupDB sinh ra (gitignored)
@@ -68,7 +70,13 @@ Mỗi resource = 1 cặp `*.controller.js` + `*.service.js`. Controller **mỏng
   `res.success(data[, status=200])` → `{ status: 'success', data }` · `res.error(error[, status=400])`
   → `{ status: 'error', error }`. `data` được `serialize()` tự động (Prisma `Decimal`/`BigInt` → Number,
   `Date` → ISO). **KHÔNG** `res.json(prismaObject)` trực tiếp, **KHÔNG** còn dùng `sendJson`.
-  Controller chuẩn: `res.success(await service.x(req.valid.body), 201)`.
+  Controller chuẩn: `res.success(await service.x(req.valid.body), httpCodes.created)`.
+- **HTTP status — KHÔNG fix cứng số:** dùng `const { httpCodes } = require('@/config/constants.js')`
+  rồi tham chiếu `httpCodes.ok|created|noContent|badRequest|unauthorized|forbidden|notFound|conflict|
+  unprocessableEntity|tooManyRequests|internalServerError` (camelCase). Áp dụng ở controller
+  (`res.success(..., httpCodes.created)`), `ApiError` (`new ApiError(httpCodes.badRequest, ...)`),
+  `response.middleware`, `errorHandler.middleware`, `notFound.middleware`. Thêm hằng dùng lại khác
+  (không chỉ status) cũng đặt vào `src/config/constants.js`.
 - **Lỗi:** ném `ApiError` (hoặc `ApiError.badRequest/unauthorized/forbidden/notFound/conflict`); bọc handler
   async bằng `asyncHandler`. `errorHandler.middleware.js` (cuối chuỗi) trả envelope
   `{ status: 'error', error: { code, message, details? } }`; route không khớp → `notFound.middleware.js` 404.
@@ -134,6 +142,23 @@ Mỗi resource = 1 cặp `*.controller.js` + `*.service.js`. Controller **mỏng
   sẵn (qua `parents`) thì OK, nhưng KHÔNG liệt kê/sửa được file người dùng tạo tay (muốn rộng hơn đổi
   scope `…/auth/drive` rồi lấy lại token). `googleDrive.js` được `backupDB.js` import qua alias
   `@/lib/googleDrive.js` → `schedule.js` PHẢI nạp `require('module-alias/register')` ở dòng đầu.
+
+## Deploy production (VPS) — cron phải có tiến trình sống mãi
+- `npm run dev`/`npm run schedule` dùng `node --watch` (CHỈ dev). Production chạy thẳng `node server.js`
+  và `node schedule.js`, KHÔNG `--watch`. Cron (`CronJob`) chỉ bắn khi tiến trình `schedule.js` còn
+  sống → cần process manager giữ sống + tự bật lại khi crash/reboot. HTTP server và cron là **2 tiến
+  trình tách biệt**, phải chạy cả hai.
+- **Cách 1 — PM2** (`ecosystem.config.js` ở ROOT, chạy cả 2 app): `npm i -g pm2` →
+  `pm2 start ecosystem.config.js` → `pm2 save` → `pm2 startup` (chạy lệnh nó in ra để tự bật sau reboot).
+  Log: `pm2 logs chou-schedule`.
+- **Cách 2 — systemd** (`deploy/chou-api.service`, `deploy/chou-schedule.service`): sửa `YOUR_USER` +
+  đường dẫn → `sudo cp deploy/*.service /etc/systemd/system/` → `daemon-reload` →
+  `systemctl enable --now chou-api chou-schedule`. Log: `journalctl -u chou-schedule -f`.
+- **BẮT BUỘC chỉnh khi lên Linux VPS**: (1) `PG_DUMP=/usr/bin/pg_dump` (cài `apt install
+  postgresql-client`, version ≥ Postgres server) — đường dẫn Postgres.app là của macOS; (2) cài `zip`
+  (`apt install zip`) cho bước nén; (3) copy `.env` (gồm `DB_*` + `GOOGLE_*`); (4) **timezone**: VPS
+  thường để UTC → `0 0 3 * * *` thành 3h sáng UTC (10h sáng VN). Cả PM2 lẫn systemd ở trên đã set
+  `TZ=Asia/Ho_Chi_Minh` cho tiến trình schedule để cron khớp giờ VN.
 
 ## Hợp đồng URL (KHÔNG đổi nếu không cần — sẽ vỡ 2 frontend)
 - User `/api/...`: `categories,sizes,colors,products,products/:slug[/availability|/reviews],settings,
