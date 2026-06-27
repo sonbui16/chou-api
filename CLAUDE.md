@@ -22,8 +22,9 @@ dùng **tiếng Việt**, tiền tệ **VND** (số nguyên đồng).
 
 ## Biến môi trường (`.env`, không commit)
 `DB_HOST` · `DB_PORT` · `DB_USER` · `DB_PASSWORD` · `DB_NAME` (postgres, các biến rời — KHÔNG
-còn `DATABASE_URL`) · `PORT=4000` · `AUTH_JWT_SECRET` · `AUTH_ACCESS_TOKEN_TTL=604800` (TTL access
-token dạng **số giây**, không dùng `"7d"`; 604800 = 7 ngày — `jwt.js` `Number()` nó để jsonwebtoken hiểu là giây) ·
+còn `DATABASE_URL`) · `PORT=4000` · `AUTH_JWT_SECRET` · `AUTH_ACCESS_TOKEN_TTL=900` (TTL access token
+dạng **số giây**, không dùng `"7d"`; 900 = 15 phút — `jwt.js` `Number()` nó để jsonwebtoken hiểu là giây) ·
+`AUTH_REFRESH_TOKEN_TTL=604800` (TTL refresh token, số giây; 604800 = 7 ngày) ·
 `CORS_ORIGINS="http://localhost:5173,http://localhost:5174"` · `NODE_ENV` · `PG_DUMP` (đường dẫn
 binary `pg_dump` cho job backup — fallback Postgres.app, vd `/Applications/Postgres.app/Contents/Versions/17/bin/pg_dump`).
 - **Backup → Google Drive** (job `backupDB`): `GOOGLE_CLIENT_ID` · `GOOGLE_CLIENT_SECRET` ·
@@ -86,6 +87,13 @@ Mỗi resource = 1 cặp `*.controller.js` + `*.service.js`. Controller **mỏng
   Prisma tự map: `P2002`→409 DUPLICATE, `P2025`→404, `23P01`(EXCLUDE)→409 `DOUBLE_BOOKING`.
 - **Auth:** header `Authorization: Bearer <jwt>`; payload `{ sub: userId, role }`. Middleware:
   `requireAuth` (gắn `req.user`), `requireAdmin` (chỉ `admin`/`staff`), `optionalAuth`.
+- **Refresh token:** access token JWT **ngắn hạn** (`AUTH_ACCESS_TOKEN_TTL`=900s/15ph) + refresh token
+  **dài hạn** (`AUTH_REFRESH_TOKEN_TTL`=604800s/7 ngày). Refresh token là chuỗi **opaque random**
+  (`lib/refreshToken.js`), DB chỉ lưu **SHA-256 hash** ở bảng `refresh_tokens` (revoke được). `register`/
+  `login` trả `{ token, refresh_token, user }` (field `token` = access, giữ tên cũ để FE không vỡ).
+  `POST /auth/refresh` xoay vòng (**rotation**): revoke token cũ → phát cặp mới; token đã revoke/hết hạn
+  → 401. `POST /auth/logout` revoke refresh token (idempotent). Cron `cleanupRefreshTokens` (3h30 sáng)
+  dọn token hết hạn. Logic ở `services/user/auth.service.js` (`issueTokens/refresh/logout`).
 - **Dữ liệu:** tiền số nguyên VND (Prisma `Decimal`, đừng float); ngày ISO 8601; field **snake_case**
   khớp DB & 2 frontend; khoá chính UUID. Danh sách có lọc/sắp xếp qua query.
 
@@ -162,7 +170,7 @@ Mỗi resource = 1 cặp `*.controller.js` + `*.service.js`. Controller **mỏng
 
 ## Hợp đồng URL (KHÔNG đổi nếu không cần — sẽ vỡ 2 frontend)
 - User `/api/...`: `categories,sizes,colors,products,products/:slug[/availability|/reviews],settings,
-  coupons/validate,auth/register|login|me,addresses(CRUD),rentals(GET,POST),rentals/:rentalNo,reviews`.
+  coupons/validate,auth/register|login|refresh|logout|me,addresses(CRUD),rentals(GET,POST),rentals/:rentalNo,reviews`.
 - Admin `/api/admin/...`: `stats,products(CRUD + GET /:id chi tiết),products/:id/variants(POST),variants/:id(DELETE),
   variants/:id/inventory(POST nhập kho),products/:id/images(POST upload),images/:id/primary(PATCH),images/:id(DELETE),
   inventory(GET,+PATCH,+DELETE /:id),rentals(+/:id,/:id/status,/:id/refund),payments,customers,coupons(CRUD),settings(GET,PUT)`.

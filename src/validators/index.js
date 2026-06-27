@@ -38,6 +38,10 @@ const registerSchema = z.object({
 const loginSchema = z.object({
   body: z.object({ email: z.string().email(), password: z.string().min(1) }),
 })
+// Dùng chung cho /auth/refresh và /auth/logout
+const refreshTokenSchema = z.object({
+  body: z.object({ refresh_token: z.string().min(1) }),
+})
 
 /* ---------------- Presence ---------------- */
 const presenceId = z.string().min(16).max(64).regex(/^[a-zA-Z0-9_-]+$/)
@@ -194,4 +198,4 @@ const addInventorySchema = z.object({
   }),
 })
 
-module.exports = { listProductsSchema, productSlugSchema, availabilitySchema, registerSchema, loginSchema, presenceHeartbeatSchema, adminVisitorsQuerySchema, createAddressSchema, updateAddressSchema, idParamSchema, createRentalSchema, rentalNoSchema, reviewSchema, validateCouponSchema, saveCouponSchema, saveProductSchema, inventoryUpdateSchema, rentalStatusSchema, adminRentalsQuerySchema, inventoryQuerySchema, updateSettingsSchema, createVariantSchema, addInventorySchema }
+module.exports = { listProductsSchema, productSlugSchema, availabilitySchema, registerSchema, loginSchema, refreshTokenSchema, presenceHeartbeatSchema, adminVisitorsQuerySchema, createAddressSchema, updateAddressSchema, idParamSchema, createRentalSchema, rentalNoSchema, reviewSchema, validateCouponSchema, saveCouponSchema, saveProductSchema, inventoryUpdateSchema, rentalStatusSchema, adminRentalsQuerySchema, inventoryQuerySchema, updateSettingsSchema, createVariantSchema, addInventorySchema }

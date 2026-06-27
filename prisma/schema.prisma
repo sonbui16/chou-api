@@ -99,8 +99,24 @@ model User {
   rentals       Rental[]
   reviews       Review[]
   visitor_sessions VisitorSession[]
+  refresh_tokens RefreshToken[]
 
   @@map("users")
+}
+
+model RefreshToken {
+  id         String    @id @default(uuid()) @db.Uuid
+  user_id    String    @db.Uuid
+  token_hash String    @unique
+  expires_at DateTime
+  revoked_at DateTime?
+  created_at DateTime  @default(now())
+
+  user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([user_id])
+  @@index([expires_at])
+  @@map("refresh_tokens")
 }
 
 model VisitorSession {

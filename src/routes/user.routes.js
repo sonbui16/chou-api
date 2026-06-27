@@ -31,6 +31,8 @@ r.post(
 /* ---------------- Auth ---------------- */
 r.post('/auth/register', validate(V.registerSchema), auth.register)
 r.post('/auth/login', validate(V.loginSchema), auth.login)
+r.post('/auth/refresh', validate(V.refreshTokenSchema), auth.refresh)
+r.post('/auth/logout', validate(V.refreshTokenSchema), auth.logout)
 r.get('/auth/me', requireAuth, auth.me)
 
 /* ---------------- Tài khoản (cần đăng nhập) ---------------- */
