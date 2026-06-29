@@ -6,6 +6,7 @@ const isoDateStr = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Định dạng ngày
 /* ---------------- Catalog ---------------- */
 const listProductsSchema = z.object({
   query: z.object({
+    q: z.string().trim().min(1).optional(),   // tìm theo từ khoá (tên/slug)
     cat: z.string().optional(),
     size: z.coerce.number().int().optional(),
     color: z.coerce.number().int().optional(),

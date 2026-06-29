@@ -51,6 +51,13 @@ async function listProducts(q) {
       : { some: { color_id: q.color } }
   }
   if (q.maxPrice) where.rental_price = { lte: q.maxPrice }
+  if (q.q) {
+    // Tìm theo từ khoá: khớp tên (có dấu) HOẶC slug (không dấu → gõ không dấu vẫn ra).
+    where.OR = [
+      { name: { contains: q.q, mode: 'insensitive' } },
+      { slug: { contains: q.q, mode: 'insensitive' } },
+    ]
+  }
 
   const orderBy =
     q.sort === 'price-asc'
