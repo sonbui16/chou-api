@@ -14,6 +14,10 @@ const { startPresenceCleanup } = require('@/lib/presenceCleanup.js')
 
 const app = express()
 
+// Chạy sau reverse proxy (nginx): tin header X-Forwarded-* để req.protocol = 'https'.
+// Nhờ vậy URL ảnh upload sinh ra là https://api... (không bị mixed-content chặn trên trang https).
+app.set('trust proxy', 1)
+
 const origins = (process.env.CORS_ORIGINS ?? '')
   .split(',')
   .map((s) => s.trim())

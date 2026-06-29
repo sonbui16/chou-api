@@ -1,0 +1,21 @@
+# Ghim alpine3.21 để có gói postgresql17-client (pg_dump v17, khớp Postgres server 17).
+FROM node:22-alpine3.21
+
+WORKDIR /app
+
+# pg_dump (job backup) + zip (nén bản backup). Thiếu 2 cái này → schedule.js backup lỗi ENOENT.
+RUN apk add --no-cache postgresql17-client zip
+
+COPY package*.json ./
+
+# Cài đủ deps (gồm prisma CLI ở devDependencies) — KHÔNG set NODE_ENV=production ở bước này,
+# nếu không prisma generate / migrate deploy sẽ thiếu CLI. NODE_ENV=production set ở runtime (compose).
+RUN npm ci
+
+COPY . .
+
+RUN npx prisma generate
+
+EXPOSE 4000
+
+CMD ["sh", "./docker-entrypoint.prod.sh"]

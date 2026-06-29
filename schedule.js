@@ -6,8 +6,8 @@ const dailyReport = require('./src/schedules/dailyRepost.js')
 const backupDB = require('./src/schedules/backupDB.js')
 const cleanupRefreshTokens = require('./src/schedules/cleanupRefreshTokens.js')
 
-// cronTime 2H SANG
-new CronJob('*/5 * * * * *', dailyReport, null, true);
+// cronTime 2H SANG (KHÔNG để '*/5 * * * * *' — đó là giá trị TEST chạy mỗi 5 giây)
+new CronJob('0 0 2 * * *', dailyReport, null, true);
 // cronTime 3H SANG
 new CronJob('0 0 3 * * *', backupDB, null, true);
 // 3H30 SANG — dọn refresh token hết hạn/đã revoke lâu

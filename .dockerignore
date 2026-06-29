@@ -4,3 +4,7 @@ dist
 *.log
 backups
 uploads
+# Secret KHÔNG nung vào image — nạp lúc chạy qua env_file trong docker-compose
+.env
+.env.production
+.env.example
